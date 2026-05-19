@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AETHER | 极简奢华数字生态</title>
+    <style>
+        /* ================= 基础重置 ================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 90px; 
+        }
+
+        body {
+            background-color: #050505; 
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* ================= 导航栏 ================= */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 25px 5vw;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(5, 5, 5, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 1000;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.05);
+        }
+
+        .logo {
+            font-size: 26px;
+            font-weight: 300;
+            letter-spacing: 6px;
+            color: #D4AF37; 
+        }
+
+        .nav-links a {
+            color: #ccc;
+            text-decoration: none;
+            margin-left: 40px;
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: color 0.4s;
+        }
+
+        .nav-links a:hover {
+            color: #D4AF37;
+        }
+
+        /* ================= 首屏 Hero ================= */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: radial-gradient(ellipse at center, #111 0%, #050505 100%);
+            padding: 0 20px;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: 4.5rem;
+            font-weight: 200;
+            letter-spacing: 12px;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #fff 40%, #D4AF37 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: #777;
+            letter-spacing: 3px;
+            margin-bottom: 50px;
+            max-width: 700px;
+            line-height: 1.8;
+        }
+
+        .scroll-down {
+            position: absolute;
+            bottom: 40px;
+            color: rgba(212, 175, 55, 0.6);
+            font-size: 12px;
+            letter-spacing: 3px;
+            text-decoration: none;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        /* ================= 生态矩阵 - 主视窗与拖拽缩略图 ================= */
+        .matrix-section {
+            padding: 100px 5vw;
+            background-color: #080808;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header h2 {
+            font-size: 2.2rem;
+            font-weight: 300;
+            letter-spacing: 6px;
+            color: #D4AF37;
+            margin-bottom: 15px;
+        }
+
+        .section-header p {
+            color: #555;
+            letter-spacing: 2px;
+            font-size: 14px;
+        }
+
+        /* 中央大视窗 */
+        .master-view {
+            max-width: 1200px;
+            margin: 0 auto 60px auto;
+            background: rgba(20, 20, 20, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 20px;
+            padding: 80px 70px; 
+            display: flex;
+            align-items: center;
+            gap: 70px; 
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 0 50px rgba(212, 175, 55, 0.03);
+            backdrop-filter: blur(12px);
+            transition: opacity 0.8s ease-in-out; 
+        }
+
+        .master-icon-container {
+            flex-shrink: 0;
+            width: 220px; 
+            height: 220px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.1), transparent);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 7rem; 
+            color: #D4AF37;
+        }
+
+        .master-info {
+            flex-grow: 1;
+        }
+
+        .master-info h3 {
+            font-size: 3.2rem; 
+            font-weight: 300;
+            margin-bottom: 25px;
+            letter-spacing: 4px;
+            color: #fff;
+        }
+
+        .master-info p {
+            font-size: 1.1rem; 
+            color: #aaa;
+            line-height: 2;
+            letter-spacing: 1.5px;
+            margin-bottom: 40px;
+        }
+
+        .btn-luxury {
+            display: inline-block;
+            background: transparent;
+            color: #D4AF37;
+            border: 1px solid #D4AF37;
+            padding: 15px 45px;
+            font-size: 13px;
+            letter-spacing: 3px;
+            text-decoration: none;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.4s;
+            text-transform: uppercase;
+        }
+
+        .btn-luxury:hover {
+            background: #D4AF37;
+            color: #000;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+        }
+
+        /* 底部可拖拽小窗口轨道 */
+        .thumbs-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            overflow: hidden; 
+            position: relative;
+            cursor: grab;
+        }
+
+        .thumbs-wrapper:active {
+            cursor: grabbing;
+        }
+
+        .thumbs-track {
+            display: flex;
+            gap: 15px; 
+            padding: 15px 0;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -ms-overflow-style: none;  
+            scrollbar-width: none;  
+        }
+        
+        .thumbs-track::-webkit-scrollbar {
+            display: none; 
+        }
+
+        .thumb {
+            flex: 0 0 150px; 
+            background: rgba(15, 15, 15, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 15px 10px; 
+            text-align: center;
+            opacity: 0.4;
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            user-select: none; 
+        }
+
+        .thumb.active {
+            opacity: 1;
+            background: rgba(25, 25, 25, 0.9);
+            border-color: #D4AF37;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.6), 0 0 10px rgba(212, 175, 55, 0.2);
+            transform: translateY(-5px) scale(1.05); 
+        }
+
+        .thumb:hover {
+            opacity: 0.8;
+        }
+
+        .thumb .t-icon {
+            font-size: 1.5rem; 
+            margin-bottom: 10px;
+            pointer-events: none;
+        }
+
+        .thumb .t-title {
+            font-size: 0.85rem; 
+            font-weight: 300;
+            color: #ddd;
+            letter-spacing: 1px;
+            pointer-events: none;
+        }
+
+        /* ================= 独立特色模块 ================= */
+        .feature-section {
+            min-height: 80vh;
+            padding: 120px 10vw;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 80px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .feature-section:nth-child(even) {
+            flex-direction: row-reverse;
+            background: linear-gradient(90deg, #050505 0%, #0a0a0a 100%);
+        }
+
+        .feature-content {
+            flex: 1;
+            max-width: 500px;
+        }
+
+        .feature-subtitle {
+            font-size: 12px;
+            color: #D4AF37;
+            letter-spacing: 4px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .feature-title {
+            font-size: 3rem;
+            font-weight: 300;
+            letter-spacing: 4px;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+
+        .feature-desc {
+            font-size: 1rem;
+            color: #888;
+            line-height: 2;
+            letter-spacing: 1.5px;
+            margin-bottom: 50px;
+        }
+
+        .feature-visual {
+            flex: 1;
+            height: 450px;
+            background: #111;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 5rem;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+        }
+
+        /* 配图区底色定制 */
+        #sec-game .feature-visual { background: radial-gradient(circle, #1a0b2e, #050505); }
+        #sec-sql .feature-visual { background: radial-gradient(circle, #0b1a2e, #050505); }
+        #sec-ai .feature-visual { background: radial-gradient(circle, #2e0b1a, #050505); }
+        #sec-music .feature-visual { background: radial-gradient(circle, #1a2e0b, #050505); }
+        #sec-travel .feature-visual { background: radial-gradient(circle, #0b2e2e, #050505); }
+        #sec-image .feature-visual { background: radial-gradient(circle, #2e2e0b, #050505); }
+        #sec-api .feature-visual { background: radial-gradient(circle, #0b1a3a, #050505); }
+        #sec-dev .feature-visual { background: radial-gradient(circle, #221236, #050505); }
+        #sec-kb .feature-visual { background: radial-gradient(circle, #362212, #050505); }
+        #sec-interview .feature-visual { background: radial-gradient(circle, #123622, #050505); }
+        #sec-novel .feature-visual { background: radial-gradient(circle, #1a2236, #050505); }
+        #sec-funeral .feature-visual { background: radial-gradient(circle, #1a1a1a, #050505); }
+
+        /* ================= Toast 提示 ================= */
+        #toast {
+            visibility: hidden;
+            min-width: 320px;
+            background-color: #D4AF37;
+            color: #000;
+            text-align: center;
+            border-radius: 4px;
+            padding: 18px 30px;
+            position: fixed;
+            z-index: 9999;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 13px;
+            letter-spacing: 2px;
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.2);
+            opacity: 0;
+            transition: opacity 0.5s, bottom 0.5s;
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 60px;
+        }
+
+        /* ================= 页脚 ================= */
+        footer {
+            text-align: center;
+            padding: 60px 20px;
+            background: #000;
+            color: #444;
+            font-size: 12px;
+            letter-spacing: 4px;
+        }
+
+        /* ================= 响应式 ================= */
+        @media (max-width: 900px) {
+            .hero h1 { font-size: 2.8rem; }
+            .master-view { flex-direction: column; text-align: center; padding: 50px 30px; gap: 40px;}
+            .master-icon-container { width: 150px; height: 150px; font-size: 5rem; }
+            .master-info h3 { font-size: 2.2rem; }
+            .feature-section, .feature-section:nth-child(even) {
+                flex-direction: column; padding: 80px 5vw; text-align: center; gap: 40px;
+            }
+            .feature-content { max-width: 100%; }
+            .feature-visual { width: 100%; height: 300px; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">AETHER</div>
+        <div class="nav-links">
+            <a href="#">首页概览</a>
+            <a href="#matrix">生态矩阵</a>
+            <a href="#">联系专属管家</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <h1>探索无界潜能</h1>
+        <p>汇聚前沿科技与顶级尊享服务，为您打造一站式的高端数字生活与企业赋能矩阵。</p>
+        <a href="#matrix" class="scroll-down">向下滚动探索</a>
+    </header>
+
+    <!-- 主视窗 + 缩略图滑动矩阵 -->
+    <section id="matrix" class="matrix-section">
+        <div class="section-header">
+            <h2>全矩阵生态服务</h2>
+            <p>DRAG TO SCROLL · 左右拖动底部卡片探索</p>
+        </div>
+        
+        <!-- 中央大视窗 -->
+        <div class="master-view" id="master-view">
+            <div class="master-icon-container" id="master-icon">🎮</div>
+            <div class="master-info">
+                <h3 id="master-title">沉浸游戏</h3>
+                <p id="master-desc">次世代云端游戏体验，跨越设备的极致画面与操作快感。打破现实与虚拟的物理边界，延迟接近于零的云端算力支持。</p>
+                <a href="#sec-game" id="master-link" class="btn-luxury">即刻体验</a>
+            </div>
+        </div>
+
+        <!-- 底部拖拽小缩略图轨道 -->
+        <div class="thumbs-wrapper">
+            <div class="thumbs-track" id="thumbs-track">
+                <!-- 由 JavaScript 动态生成内容 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= 独立详情区块 ================= -->
+
+    <section id="sec-game" class="feature-section">
+        <div class="feature-content">
+            <div class="feature-subtitle">Gaming Era</div>
+            <h2 class="feature-title">沉浸游戏境域</h2>
+            <p class="feature-desc">打破现实与虚拟的物理边界。我们为您提供延迟接近于零的云端算力支持，无论是3A级光追大作还是独立艺术游戏，都能在任何屏幕上以 4K/120帧 的极致力度呈现。</p>
+            <button class="btn-luxury" onclick="showDevelopmentToast('沉浸游戏')">开启境域</button>
+        </div>
+        <div class="feature-visual">🎮</div>
+    </section>
+
+    <section id="sec-sql" class="feature-section">
+        <div class="feature-content">
+            <div class="feature-subtitle">Data Insight</div>
+            <h2 class="feature-title">智能数据引擎</h2>
+            <p class="feature-desc">告别繁琐的代码编写。结合底层 NLP 架构，只需用人类最自然的语言描述业务需求，系统即可瞬间生成精准、高并发的 SQL 语句，让数据价值立竿见影。</p>
+            <button class="btn-luxury" onclick="showDevelopmentToast('智能 SQL 生成')">接入引擎</button>
+        </div>
+        <div class="feature-visual">💻</div>
+    </section>
+
+    <section id="sec-ai" class="feature-section">
+        <div class="feature-content">
+            <div class="feature-subtitle">Private AI</div>
+            <h2 class="feature-title">无界算力训练</h2>
+            <p class="feature-desc">为头部企业量身定制的私有化大模型基座。提供从数据清洗、参数微调到安全部署的全链路服务，确保您的商业机密在物理隔离的算力集群中焕发 AI 潜能。</p>
+            <button class="btn-luxury" onclick="showDevelopmentToast('大模型训练')">获取算力</button>
+        </div>
+        <div class="feature-visual">🧠</div>
+    </section>
+
+    <section id="sec-music" class="feature-section">
+        <div class="feature-content">
+            <div class="feature-subtitle">Acoustic Space</div>
+            <h2 class="feature-title">全景音乐殿堂</h2>
+            <p class="feature-desc">甄选全球母带级无损音源。结合动态头部追踪与空间音频计算，在这里，每一个音符都如水晶般剔透，为您打造一座只属于您一个人的维也纳金色大厅。</p>
+            <button class="btn-luxury" onclick="showDevelopmentToast('全景听歌')">佩戴耳机</button>
+        </div>
+        <div class="feature-visual">🎧</div>
+    </section>
+
+    <section id="sec-travel" class="feature-section">
+        <div class="feature-content">
+            <div class="feature-subtitle">Global Voyage</div>
+            <h2 class="feature-title">避世环球之旅</h2>
+            <p class="feature-desc">拒绝千篇一律的行程。从极地破冰船的 VIP 舱位，到包下整座私人岛屿的静谧时光。您的私人旅行管家将为您规划不可复制的绝境奢华体验。</p>
+            <button class="btn-luxury" onclick="showDevelopmentToast('环球奢游')">定制行程</button>
+        </div>
+        <div class="feature-visual">✈️</div>
+    </section>
+
+    <section id="sec-image" class="feature-section">
+        <div class="feature-content">
+            <div class="feature-subtitle">Visual Art</div>
+            <h2 class="feature-title">视觉重塑工坊</h2>
+            <p class="feature-desc">将转瞬即逝的灵感凝固为传世画作。搭载最新的扩散模型矩阵，无论是油画笔触、超写实摄影还是赛博朋克重构，都在您敲击键盘的瞬间完美诞生。</p>
+            <button class="btn-luxury" onclick="showDevelopmentToast('AI 视觉生成')">创作艺术</button>
+        </div>
+        <div class="feature-visual">🎨</div>
+    </section>
+
+    <section id="sec-api" class="feature-section">
+        <div class="feature-content">
+            <div class="feature-subtitle">Global API Hub</div>
+            <h2 class="feature-title">全球智算枢纽</h2>
+            <p class="feature-desc">无缝桥接国内外顶尖大语言模型生态。采用统一的高可用 API 规范，支持海量并发与毫秒级响应，为您的上层业务逻辑提供稳定、合规、极具弹性的算力分发支撑。</p>
+            <button class="btn-luxury" onclick="showDevelopmentToast('大模型接口调用')">调度资源</button>
+        </div>
+        <div class="feature-visual">🌐</div>
+    </section>
+
+    <section id="sec-dev" class="feature-section">
+        <div class="feature-content">
+            <div class="feature-subtitle">Haute Couture Code</div>
+            <h2 class="feature-title">高定数字构建</h2>
+            <p class="feature-desc">拒绝流水线与模板化。从顶层业务架构到像素级 UI 雕琢，我们提供企业级门户网站与微信、多端小程序的深度定制化开发，真正为您打造不可复制的数字品牌护城河。</p>
+            <button class="btn-luxury" onclick="showDevelopmentToast('门户网站与小程序定制')">预约构架师</button>
+        </div>
+        <div class="feature-visual">📱</div>
+    </section>
+
+    <section id="sec-kb" class="feature-section">
+        <div class="feature-content">
+            <div class="feature-subtitle">Enterprise RAG</div>
+            <h2 class="feature-title">认知中枢重构</h2>
+            <p class="feature-desc">深度融合 RAG (检索增强生成) 架构，将海量企业非结构化图文、文档转化为智慧化知识库。支持精准内容溯源与拟人化交互问答，让企业数字记忆生生不息。</p>
+            <button class="btn-luxury" onclick="showDevelopmentToast('大模型知识库')">上传语料</button>
+        </div>
+        <div class="feature-visual">📚</div>
+    </section>
+
+    <section id="sec-interview" class="feature-section">
+        <div class="feature-content">
+            <div class="feature-subtitle">Geek's Bible</div>
+            <h2 class="feature-title">极客登顶指南</h2>
+            <p class="feature-desc">深度提炼硅谷与国内一线大厂的底层面试真题库。剥丝抽茧解析算法底层逻辑、系统架构演进与高并发实战要领，助您从容跨越技术壁垒，斩获百万级顶级 Offer。</p>
+            <button class="btn-luxury" onclick="showDevelopmentToast('程序员面试宝典')">研读宝典</button>
+        </div>
+        <div class="feature-visual">💼</div>
+    </section>
+
+    <!-- 新增的小说模块 (位于倒数第二) -->
+    <section id="sec-novel" class="feature-section">
+        <div class="feature-content">
+            <div class="feature-subtitle">Literary Universe</div>
+            <h2 class="feature-title">全息文学宇宙</h2>
+            <p class="feature-desc">海量正版文学巨著与网络小说首发。提供护眼级排版与拟真翻页手感，结合情境沉浸白噪音，让您在字里行间开启专属的精神漫游。</p>
+            <button class="btn-luxury" onclick="showDevelopmentToast('文学宇宙')">翻开书页</button>
+        </div>
+        <div class="feature-visual">📖</div>
+    </section>
+
+    <!-- 丧葬服务移至最后 -->
+    <section id="sec-funeral" class="feature-section">
+        <div class="feature-content">
+            <div class="feature-subtitle">Eternal Peace</div>
+            <h2 class="feature-title">星辰归途服务</h2>
+            <p class="feature-desc">生命的终章亦需奢雅的礼赞。从极简禅意的空间设计，到定制化的数字生命传承，我们用克制、专业与最高级别的敬意，为逝者提供体面，为生者留下温存。</p>
+            <button class="btn-luxury" onclick="showDevelopmentToast('尊享丧葬服务')">了解礼仪</button>
+        </div>
+        <div class="feature-visual">🕊️</div>
+    </section>
+
+    <footer>
+        &copy; 2026 AETHER ENTERPRISE. 极致追求 · 永不妥协
+    </footer>
+
+    <!-- 自定义 Toast 提示 -->
+    <div id="toast"></div>
+
+    <script>
+        // ================== 数据定义 ==================
+        // 数据数组已同步调整顺序：旅游、视觉、接口、开发、知识库、面试、小说（新增）、丧葬（最后）
+        const modulesData = [
+            { id: "sec-game", icon: "🎮", title: "沉浸游戏", desc: "次世代云端游戏体验，跨越设备的极致画面与操作快感。打破现实与虚拟的物理边界，延迟接近于零的云端算力支持。" },
+            { id: "sec-sql", icon: "💻", title: "智能 SQL 生成", desc: "自然语言驱动的数据查询，让数据库分析变得前所未有的简单。告别繁琐代码，瞬间生成精准、高并发的查询逻辑。" },
+            { id: "sec-ai", icon: "🧠", title: "大模型训练", desc: "企业级私有化 AI 模型微调与部署，释放绝对算力潜能。确保您的商业机密在物理隔离的算力集群中安全运行。" },
+            { id: "sec-music", icon: "🎧", title: "全景听歌", desc: "无损音质与空间音频，为您定制专属的心灵音乐厅。结合动态头部追踪，每一个音符都如水晶般剔透。" },
+            { id: "sec-travel", icon: "✈️", title: "环球奢游", desc: "私人定制的全球旅行路线，享受避世之境的静谧与奢华。为您规划不可复制的绝境之旅与顶级定制服务。" },
+            { id: "sec-image", icon: "🎨", title: "AI 视觉生成", desc: "将转瞬即逝的想象力转化为殿堂级艺术画作。搭载最新扩散模型矩阵，支持多风格精准重构与生成。" },
+            { id: "sec-api", icon: "🌐", title: "大模型接口调用", desc: "无缝对接全球顶尖 LLM 资源，提供毫秒级响应的高可用 API。为上层智能应用提供稳定、极具弹性的算力支撑。" },
+            { id: "sec-dev", icon: "📱", title: "高定数字开发", desc: "企业门户与小程序深度定制，打造不可复制的数字品牌资产。拒绝模板，从底层架构到像素级 UI 雕琢。" },
+            { id: "sec-kb", icon: "📚", title: "大模型知识库", desc: "基于 RAG 架构将海量企业非结构化数据转化为智慧认知中枢。支持毫秒级精准溯源问答，让数字记忆生生不息。" },
+            { id: "sec-interview", icon: "💼", title: "程序员面试宝典", desc: "深度提炼大厂底层核心面试题库，解析算法逻辑与高并发实战要领。助你跨越壁垒，从容斩获顶级百万 Offer。" },
+            { id: "sec-novel", icon: "📖", title: "文学宇宙", desc: "海量正版文学巨著与网络小说首发。提供护眼级排版与拟真翻页手感，让您在字里行间开启沉浸式的精神漫游。" },
+            { id: "sec-funeral", icon: "🕊️", title: "尊享丧葬服务", desc: "用最高规格的礼仪与人文关怀，体面告别，让记忆永存。从极简禅意空间到数字生命传承，留下无尽温存。" }
+        ];
+
+        // ================== 初始化与 DOM 获取 ==================
+        const track = document.getElementById('thumbs-track');
+        const masterView = document.getElementById('master-view');
+        const mIcon = document.getElementById('master-icon');
+        const mTitle = document.getElementById('master-title');
+        const mDesc = document.getElementById('master-desc');
+        const mLink = document.getElementById('master-link');
+
+        let currentIndex = 0;
+        let autoPlayInterval;
+
+        // 生成底部缩略图卡片
+        modulesData.forEach((mod, index) => {
+            const thumb = document.createElement('div');
+            thumb.className = 'thumb';
+            thumb.innerHTML = `
+                <div class="t-icon">${mod.icon}</div>
+                <div class="t-title">${mod.title}</div>
+            `;
+            // 点击事件
+            thumb.addEventListener('click', () => {
+                if (!isDragging) {
+                    currentIndex = index;
+                    updateMasterView();
+                    resetTimer();
+                }
+            });
+            track.appendChild(thumb);
+        });
+
+        const thumbsElements = document.querySelectorAll('.thumb');
+
+        // ================== 更新主视窗 ==================
+        function updateMasterView() {
+            masterView.style.opacity = 0;
+            
+            setTimeout(() => {
+                const data = modulesData[currentIndex];
+                mIcon.innerText = data.icon;
+                mTitle.innerText = data.title;
+                mDesc.innerText = data.desc;
+                mLink.href = `#${data.id}`;
+                
+                thumbsElements.forEach((el, i) => {
+                    el.classList.toggle('active', i === currentIndex);
+                });
+
+                const activeThumb = thumbsElements[currentIndex];
+                const trackCenter = track.offsetWidth / 2;
+                const thumbCenter = activeThumb.offsetLeft + (activeThumb.offsetWidth / 2);
+                track.scrollTo({
+                    left: thumbCenter - trackCenter,
+                    behavior: 'smooth' 
+                });
+
+                masterView.style.opacity = 1;
+            }, 400); 
+        }
+
+        // ================== 自动播放逻辑 ==================
+        function nextModule() {
+            currentIndex = (currentIndex + 1) % modulesData.length;
+            updateMasterView();
+        }
+
+        function startTimer() {
+            autoPlayInterval = setInterval(nextModule, 6000); 
+        }
+
+        function resetTimer() {
+            clearInterval(autoPlayInterval);
+            startTimer();
+        }
+
+        masterView.addEventListener('mouseenter', () => clearInterval(autoPlayInterval));
+        masterView.addEventListener('mouseleave', startTimer);
+
+        // ================== 鼠标丝滑拖拽逻辑 ==================
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+        let isDragging = false; 
+
+        track.addEventListener('mousedown', (e) => {
+            isDown = true;
+            isDragging = false;
+            track.style.scrollBehavior = 'auto'; 
+            startX = e.pageX - track.offsetLeft;
+            scrollLeft = track.scrollLeft;
+            clearInterval(autoPlayInterval); 
+        });
+
+        track.addEventListener('mouseleave', () => {
+            if(isDown) {
+                isDown = false;
+                track.style.scrollBehavior = 'smooth';
+                startTimer();
+            }
+        });
+
+        track.addEventListener('mouseup', () => {
+            isDown = false;
+            track.style.scrollBehavior = 'smooth'; 
+            startTimer();
+        });
+
+        track.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - track.offsetLeft;
+            const walk = (x - startX) * 1; 
+            if (Math.abs(walk) > 5) {
+                isDragging = true; 
+            }
+            track.scrollLeft = scrollLeft - walk;
+        });
+
+        track.addEventListener('touchstart', () => clearInterval(autoPlayInterval), {passive: true});
+        track.addEventListener('touchend', startTimer);
+
+        // 初始化执行
+        updateMasterView();
+        startTimer();
+
+        // ================== Toast 提示 ==================
+        function showDevelopmentToast(moduleName) {
+            const toast = document.getElementById("toast");
+            toast.innerText = `【${moduleName}】模块正在匠心开发中，敬请期待...`;
+            toast.className = "show";
+            setTimeout(function(){
+                toast.className = toast.className.replace("show", "");
+            }, 3000);
+        }
+
+        // ================== 页内平滑锚点跳转 ==================
+        document.getElementById('master-link').addEventListener('click', function(e){
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            document.querySelector(targetId).scrollIntoView({ behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>
