@@ -70,12 +70,38 @@
         .action-btn .icon { font-size: 22px; }
         .action-btn:hover { border-color: #D4AF37; background: rgba(212, 175, 55, 0.2); box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); transform: translateY(-3px); }
 
-        .time-control-panel { position: fixed; top: 25px; right: 25px; background: rgba(20, 20, 25, 0.6); border: 1px solid rgba(212, 175, 55, 0.2); padding: 15px 25px; border-radius: 12px; backdrop-filter: blur(5px); z-index: 1000; width: 300px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
-        .time-display { font-size: 18px; color: #fff; letter-spacing: 3px; text-align: center; font-weight: 300;}
-        .speed-slider-container { display: flex; align-items: center; gap: 15px; color: #D4AF37; font-size: 12px; }
-        .speed-slider { flex-grow: 1; -webkit-appearance: none; background: #444; height: 4px; border-radius: 2px; outline: none; cursor: pointer;}
-        .speed-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #D4AF37; border-radius: 50%; box-shadow: 0 0 10px rgba(212, 175, 55, 0.5); transition: background 0.3s, transform 0.3s;}
-        .speed-slider::-webkit-slider-thumb:hover { transform: scale(1.1);}
+        .hint-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.4); font-size: 12px; letter-spacing: 2px; pointer-events: none; z-index: 1000; }
+
+        /* ================= 移动端适配 ================= */
+        @media (max-width: 768px) {
+            .tombstone { width: 85vw; max-width: 380px; height: auto; min-height: 400px; padding: 30px 20px; border-top-left-radius: 50%; border-top-right-radius: 50%; }
+            .tombstone-base { width: 90vw; max-width: 480px; height: 30px; }
+            .photo-frame { width: 80px; height: 100px; }
+            .epitaph { font-size: 1rem; line-height: 2; letter-spacing: 4px; }
+            .epitaph-title { font-size: 12px; }
+            .fixed-controls { bottom: 20px; gap: 15px; }
+            .action-btn { padding: 10px 20px; font-size: 12px; letter-spacing: 2px; }
+            .action-btn .icon { font-size: 18px; }
+            .hint-bar { display: none; }
+            .grave-mound { width: 90vw; max-width: 550px; height: 120px; }
+            .flower-layer-grave { width: 95vw; max-width: 580px; }
+            .incense-burner { width: 80px; height: 35px; }
+            .incense-stick { height: 40px; }
+            .worshipper { width: 40px; height: 55px; }
+            .w-head { width: 14px; height: 14px; }
+            .w-body { width: 22px; height: 32px; }
+            .paper-container { width: 250px; height: 250px; }
+            body { overflow: auto; }
+            #universe { transform-origin: center center; }
+        }
+
+        @media (max-width: 480px) {
+            .tombstone { padding: 25px 15px; min-height: 340px; }
+            .photo-frame { width: 70px; height: 90px; border-width: 3px; }
+            .epitaph { font-size: 0.9rem; letter-spacing: 3px; }
+            .fixed-controls { gap: 10px; }
+            .action-btn { padding: 8px 15px; font-size: 11px; }
+        }
 
         /* ================= 🌸 祭祀仪式特效 (香炉、小人叩首、烧纸) ================= */
 
@@ -117,15 +143,6 @@
 <body>
 
     <div class="hint-bar">F5刷新时间起点 · 滚轮缩放 · 鼠标环顾景深</div>
-
-    <div class="time-control-panel">
-        <div class="time-display" id="timeDisplay">06:00</div>
-        <div class="speed-slider-container">
-            <span>真实时间</span>
-            <input type="range" id="speedSlider" class="speed-slider" min="1" max="60" value="60">
-            <span>60倍流速</span>
-        </div>
-    </div>
 
     <div id="universe">
         <div class="parallax-layer" data-depth="10">
@@ -223,12 +240,8 @@
         const universe = document.getElementById('universe');
         const sunLayer = document.getElementById('sunLayer');
         const moonLayer = document.getElementById('moonLayer');
-        const timeDisplay = document.getElementById('timeDisplay');
-        const speedSlider = document.getElementById('speedSlider');
 
         let state = { gameTimeMinutes: 360, timeSpeedFactor: 60, lastFrameTime: Date.now() }
-
-        speedSlider.addEventListener('input', (e) => { state.timeSpeedFactor = parseInt(e.target.value); });
 
         function updateTimeCycle() {
             const now = Date.now();
@@ -239,8 +252,6 @@
             state.gameTimeMinutes = state.gameTimeMinutes % 1440;
 
             const currentHour = state.gameTimeMinutes / 60;
-            timeDisplay.innerText = `${String(Math.floor(currentHour)).padStart(2, '0')}:${String(Math.floor(state.gameTimeMinutes % 60)).padStart(2, '0')}`;
-
             updateEnvironmentLighting(currentHour);
             requestAnimationFrame(updateTimeCycle);
         }
