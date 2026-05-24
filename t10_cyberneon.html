@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>赛博霓虹灯</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; overflow: hidden;
+            background: #0a0a0a;
+            font-family: 'Courier New', 'PingFang SC', sans-serif;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+
+        .brick-wall {
+            position: fixed; inset: 0; z-index: 0;
+            background:
+                repeating-linear-gradient(0deg, transparent, transparent 29px, rgba(255,255,255,0.02) 29px, rgba(255,255,255,0.02) 30px),
+                repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(255,255,255,0.02) 59px, rgba(255,255,255,0.02) 60px),
+                linear-gradient(180deg, #1a1512, #0d0b09);
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; }
+
+        .neon-container {
+            position: relative; z-index: 10;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .neon-sign {
+            position: relative; padding: 40px 60px;
+            border: 2px solid rgba(255, 0, 128, 0.1);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .neon-line {
+            font-size: clamp(32px, 8vw, 64px); font-weight: 700;
+            letter-spacing: 8px; text-align: center;
+            color: rgba(255, 0, 128, 0.15);
+            text-shadow:
+                0 0 4px rgba(255, 0, 128, 0.05),
+                0 0 11px rgba(255, 0, 128, 0.03);
+            transition: all 0.1s;
+        }
+
+        .neon-line:nth-child(2) {
+            font-size: clamp(24px, 6vw, 48px);
+            color: rgba(0, 200, 255, 0.15);
+            text-shadow:
+                0 0 4px rgba(0, 200, 255, 0.05),
+                0 0 11px rgba(0, 200, 255, 0.03);
+        }
+
+        .neon-tube {
+            position: absolute; height: 2px;
+            background: rgba(255, 0, 128, 0.1);
+            box-shadow: none;
+            transition: all 0.1s;
+        }
+        .neon-tube.top { top: -1px; left: 10%; width: 80%; }
+        .neon-tube.bottom { bottom: -1px; left: 10%; width: 80%; }
+        .neon-tube.left { left: -1px; top: 10%; height: 80%; width: 2px; }
+        .neon-tube.right { right: -1px; top: 10%; height: 80%; width: 2px; }
+
+        .neon-heart {
+            margin: 30px 0; position: relative;
+            width: clamp(60px, 15vw, 100px);
+            height: clamp(55px, 13vw, 90px);
+            opacity: 0.15;
+            transition: all 0.1s;
+        }
+        .neon-heart::before, .neon-heart::after {
+            content: ''; position: absolute; top: 0;
+            width: clamp(30px, 7.5vw, 50px);
+            height: clamp(50px, 12.5vw, 80px);
+            border-radius: clamp(30px, 7.5vw, 50px) clamp(30px, 7.5vw, 50px) 0 0;
+            background: transparent;
+            box-shadow: none;
+        }
+        .neon-heart::before {
+            left: clamp(30px, 7.5vw, 50px);
+            transform: rotate(-45deg);
+            transform-origin: 0 100%;
+            border: 2px solid rgba(255, 0, 128, 0.1);
+        }
+        .neon-heart::after {
+            left: 0;
+            transform: rotate(45deg);
+            transform-origin: 100% 100%;
+            border: 2px solid rgba(255, 0, 128, 0.1);
+        }
+
+        .flickering .neon-line:first-child {
+            animation: pinkFlicker 3s infinite;
+        }
+        .flickering .neon-line:nth-child(2) {
+            animation: blueFlicker 4s infinite;
+        }
+        .flickering .neon-tube {
+            animation: tubeFlicker 2.5s infinite;
+        }
+        .flickering .neon-heart {
+            animation: heartFlicker 3.5s infinite;
+        }
+
+        @keyframes pinkFlicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                color: rgba(255, 0, 128, 0.15);
+                text-shadow: 0 0 4px rgba(255,0,128,0.05), 0 0 11px rgba(255,0,128,0.03);
+            }
+            20%, 24%, 55% {
+                color: rgba(255, 0, 128, 0.8);
+                text-shadow: 0 0 10px rgba(255,0,128,0.5), 0 0 30px rgba(255,0,128,0.3), 0 0 60px rgba(255,0,128,0.2);
+            }
+        }
+
+        @keyframes blueFlicker {
+            0%, 42%, 44%, 73%, 75%, 100% {
+                color: rgba(0, 200, 255, 0.15);
+                text-shadow: 0 0 4px rgba(0,200,255,0.05), 0 0 11px rgba(0,200,255,0.03);
+            }
+            43%, 74% {
+                color: rgba(0, 200, 255, 0.7);
+                text-shadow: 0 0 10px rgba(0,200,255,0.5), 0 0 30px rgba(0,200,255,0.3), 0 0 60px rgba(0,200,255,0.2);
+            }
+        }
+
+        @keyframes tubeFlicker {
+            0%, 100% { background: rgba(255,0,128,0.1); box-shadow: none; }
+            50% { background: rgba(255,0,128,0.4); box-shadow: 0 0 8px rgba(255,0,128,0.2); }
+            52% { background: rgba(255,0,128,0.05); box-shadow: none; }
+            54% { background: rgba(255,0,128,0.3); box-shadow: 0 0 5px rgba(255,0,128,0.15); }
+        }
+
+        @keyframes heartFlicker {
+            0%, 37%, 39%, 61%, 63%, 100% { opacity: 0.15; }
+            38%, 62% { opacity: 0.7; }
+        }
+
+        /* 通电状态 */
+        .powered-on .neon-line:first-child {
+            color: #ff0080;
+            text-shadow:
+                0 0 7px #ff0080, 0 0 20px #ff0080,
+                0 0 42px #ff0080, 0 0 82px #ff0080,
+                0 0 92px #ff0080, 0 0 102px #ff0080;
+            animation: none;
+        }
+
+        .powered-on .neon-line:nth-child(2) {
+            color: #00c8ff;
+            text-shadow:
+                0 0 7px #00c8ff, 0 0 20px #00c8ff,
+                0 0 42px #00c8ff, 0 0 82px #00c8ff,
+                0 0 92px #00c8ff, 0 0 102px #00c8ff;
+            animation: none;
+        }
+
+        .powered-on .neon-tube {
+            background: #ff0080;
+            box-shadow: 0 0 10px #ff0080, 0 0 30px #ff0080, 0 0 60px #ff0080;
+            animation: none;
+        }
+
+        .powered-on .neon-heart::before,
+        .powered-on .neon-heart::after {
+            border-color: #ff0080;
+            box-shadow: 0 0 10px #ff0080, 0 0 30px #ff0080, inset 0 0 10px rgba(255,0,128,0.2);
+        }
+
+        .powered-on .neon-heart {
+            opacity: 1;
+            animation: heartPulse 1.5s ease-in-out infinite;
+        }
+
+        .powered-on .neon-sign {
+            border-color: rgba(255, 0, 128, 0.4);
+            box-shadow: 0 0 30px rgba(255,0,128,0.2), 0 0 80px rgba(0,200,255,0.1);
+        }
+
+        @keyframes heartPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        .power-switch {
+            margin-top: 50px; position: relative; z-index: 10;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .switch-btn {
+            padding: 12px 36px; font-size: 16px; font-weight: 700;
+            letter-spacing: 4px; text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px; cursor: pointer;
+            transition: all 0.3s;
+        }
+        .switch-btn:hover {
+            color: #fff; border-color: rgba(255,255,255,0.3);
+        }
+        .switch-btn.active {
+            color: #00ff88; border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0,255,136,0.3);
+        }
+
+        .switch-label {
+            margin-top: 12px; font-size: 11px;
+            color: rgba(255,255,255,0.2); letter-spacing: 2px;
+        }
+
+        .glow-overlay {
+            position: fixed; inset: 0; z-index: 5;
+            pointer-events: none;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.8) 100%);
+            transition: all 2s ease;
+        }
+        .powered-on ~ .glow-overlay {
+            background: radial-gradient(ellipse at center, rgba(255,0,128,0.05) 20%, rgba(0,0,0,0.6) 100%);
+        }
+
+        .buzz-indicator {
+            position: fixed; bottom: 15%; left: 50%; transform: translateX(-50%);
+            font-size: 12px; color: rgba(255,255,255,0.15);
+            letter-spacing: 3px; pointer-events: none;
+        }
+
+        .confession-text {
+            position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%);
+            z-index: 10; text-align: center;
+            opacity: 0; transition: opacity 2s ease 1s;
+            pointer-events: none;
+        }
+        .powered-on ~ .confession-text { opacity: 1; }
+        .confession-text p {
+            font-size: clamp(14px, 3vw, 18px);
+            color: rgba(255,255,255,0.5); letter-spacing: 3px;
+        }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+    <div class="brick-wall"></div>
+    <div class="glow-overlay"></div>
+
+    <div class="neon-container flickering" id="neonContainer">
+        <div class="neon-sign">
+            <div class="neon-tube top"></div>
+            <div class="neon-tube bottom"></div>
+            <div class="neon-tube left"></div>
+            <div class="neon-tube right"></div>
+            <div class="neon-line">我 喜 欢 你</div>
+            <div class="neon-line">LIKE YOU</div>
+        </div>
+        <div class="neon-heart"></div>
+    </div>
+
+    <div class="power-switch">
+        <button class="switch-btn" id="switchBtn">&#9889; 通电</button>
+        <div class="switch-label">PUSH TO POWER ON</div>
+    </div>
+
+    <div class="buzz-indicator" id="buzzText">zzzt...zzzt...</div>
+
+    <div class="confession-text">
+        <p>电流接通的那一刻，就像我见到你时的心跳</p>
+    </div>
+
+    <script>
+        const container = document.getElementById('neonContainer');
+        const switchBtn = document.getElementById('switchBtn');
+        const buzzText = document.getElementById('buzzText');
+        let poweredOn = false;
+        let buzzInterval = null;
+
+        function startBuzz() {
+            const buzzes = ['zzzt...', 'kzzt...', 'bzz...', 'zzz...', 'crk...', 'zzzt...zzzt...'];
+            buzzInterval = setInterval(() => {
+                buzzText.textContent = buzzes[Math.floor(Math.random() * buzzes.length)];
+                buzzText.style.opacity = 0.1 + Math.random() * 0.2;
+            }, 300 + Math.random() * 500);
+        }
+        startBuzz();
+
+        let audioCtx = null;
+        function playBuzz() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.value = 50 + Math.random() * 30;
+            gain.gain.value = 0.02;
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+        setInterval(() => { if (!poweredOn) playBuzz(); }, 800 + Math.random() * 1200);
+
+        switchBtn.addEventListener('click', () => {
+            if (poweredOn) return;
+            poweredOn = true;
+
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 440;
+            osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3);
+            gain.gain.value = 0.05;
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1);
+
+            container.classList.remove('flickering');
+            container.classList.add('powered-on');
+            switchBtn.classList.add('active');
+            switchBtn.textContent = '已通电';
+            buzzText.style.opacity = '0';
+            clearInterval(buzzInterval);
+        });
+    </script>
+</body>
+</html>

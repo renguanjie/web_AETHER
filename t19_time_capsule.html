@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时光胶囊</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; overflow: hidden;
+            background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 30%, #8B7355 60%, #654321 100%);
+            font-family: 'Georgia', 'Noto Serif SC', serif;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: #fff;
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.7); text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; }
+
+        .scene { text-align: center; position: relative; z-index: 10; }
+        .capsule-icon {
+            font-size: clamp(60px, 15vw, 100px);
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+        }
+        @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+        .capsule-title {
+            font-size: clamp(22px, 5vw, 36px); font-weight: 300;
+            letter-spacing: 4px; margin: 20px 0 8px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .capsule-sub {
+            font-size: 14px; color: rgba(255,255,255,0.7);
+            letter-spacing: 2px; margin-bottom: 30px;
+        }
+        .bury-btn {
+            padding: 14px 40px; font-size: clamp(16px, 4vw, 20px);
+            letter-spacing: 4px; color: #fff;
+            background: linear-gradient(135deg, #D4AF37, #B8860B);
+            border: none; border-radius: 30px; cursor: pointer;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3); transition: all 0.3s;
+        }
+        .bury-btn:hover { transform: translateY(-3px); }
+        .bury-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+        .burial-scene {
+            position: fixed; inset: 0; z-index: 50;
+            background: linear-gradient(180deg, #87CEEB, #8B7355);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 1s ease;
+        }
+        .burial-scene.active { opacity: 1; pointer-events: auto; }
+
+        .burying-capsule {
+            font-size: 80px; animation: buryAnim 3s ease forwards;
+        }
+        @keyframes buryAnim {
+            0%{transform:translateY(0) scale(1);opacity:1;}
+            60%{transform:translateY(50px) scale(0.8);opacity:0.7;}
+            100%{transform:translateY(120px) scale(0.3);opacity:0;}
+        }
+
+        .dirt-overlay {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            height: 0; background: #654321;
+            transition: height 2s ease 0.5s;
+        }
+        .burial-scene.active .dirt-overlay { height: 100%; }
+
+        .burial-text {
+            position: relative; z-index: 10;
+            font-size: clamp(16px,4vw,24px); color: #fff;
+            letter-spacing: 3px; opacity: 0;
+            transition: opacity 1s ease 2s;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .burial-scene.active .burial-text { opacity: 1; }
+
+        .burial-message {
+            position: relative; z-index: 10;
+            font-size: clamp(14px,3vw,18px); color: rgba(255,255,255,0.7);
+            letter-spacing: 2px; opacity: 0;
+            transition: opacity 1.5s ease 3s;
+        }
+        .burial-scene.active .burial-message { opacity: 1; }
+
+        .flower-sprout {
+            position: fixed; bottom: 20%; left: 50%; z-index: 60;
+            font-size: 40px;
+            opacity: 0; transform: translateX(-50%) scale(0);
+            transition: all 1s cubic-bezier(0.34,1.56,0.64,1) 3.5s;
+        }
+        .burial-scene.active .flower-sprout {
+            opacity: 1; transform: translateX(-50%) scale(1);
+        }
+
+        .reopen-hint {
+            position: fixed; bottom: 8%; left: 50%; transform: translateX(-50%);
+            z-index: 60; font-size: 12px; color: rgba(255,255,255,0.3);
+            letter-spacing: 2px; opacity: 0; transition: opacity 1s ease 4s;
+        }
+        .burial-scene.active .reopen-hint { opacity: 1; }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div class="scene" id="scene">
+        <div class="capsule-icon">&#9200;</div>
+        <div class="capsule-title">时光胶囊</div>
+        <div class="capsule-sub">把此刻的心情埋进时间里</div>
+        <button class="bury-btn" id="buryBtn">埋下胶囊</button>
+    </div>
+
+    <div class="burial-scene" id="burialScene">
+        <div class="burying-capsule">&#9200;</div>
+        <div class="dirt-overlay"></div>
+        <div class="burial-text">已埋入时间的土壤</div>
+        <div class="burial-message">
+            里面装着一句话：<br>"我喜欢你"<br><br>
+            等到合适的时机，它会发芽。
+        </div>
+        <div class="flower-sprout">&#127801;</div>
+        <div class="reopen-hint">点击屏幕，重新打开</div>
+    </div>
+
+    <script>
+        const buryBtn = document.getElementById('buryBtn');
+        const burialScene = document.getElementById('burialScene');
+
+        buryBtn.addEventListener('click', () => {
+            burialScene.classList.add('active');
+        });
+
+        burialScene.addEventListener('click', () => {
+            burialScene.classList.remove('active');
+        });
+    </script>
+</body>
+</html>

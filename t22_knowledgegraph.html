@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>知识图谱连线</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background: #05050f;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', 'PingFang SC', sans-serif;
+        }
+
+        canvas { display: block; }
+
+        #overlay {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+            z-index: 10;
+        }
+        #overlay.visible { opacity: 1; pointer-events: auto; }
+
+        .overlay-bg {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle at center, rgba(20,10,40,0.92), rgba(5,5,15,0.97));
+        }
+
+        .overlay-content {
+            position: relative; z-index: 1;
+            text-align: center;
+        }
+
+        .overlay-heart {
+            font-size: clamp(40px, 10vw, 80px);
+            animation: heartbeat 1s ease-in-out infinite;
+            margin-bottom: 24px;
+            filter: drop-shadow(0 0 30px rgba(255, 107, 177, 0.6));
+        }
+        @keyframes heartbeat {
+            0%,100% { transform: scale(1); }
+            15% { transform: scale(1.2); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.1); }
+        }
+
+        .overlay-title {
+            font-size: clamp(20px, 5vw, 36px);
+            color: #fff;
+            letter-spacing: 6px;
+            font-weight: 200;
+            opacity: 0;
+            animation: rise 1.5s ease 0.3s forwards;
+        }
+        .overlay-title .pink {
+            color: #ff6b9d;
+            text-shadow: 0 0 20px rgba(255,107,157,0.4);
+        }
+
+        .overlay-sub {
+            font-size: clamp(12px, 2.5vw, 16px);
+            color: #888;
+            letter-spacing: 4px;
+            margin-top: 16px;
+            opacity: 0;
+            animation: rise 1.5s ease 1s forwards;
+        }
+
+        .overlay-connections {
+            margin-top: 24px;
+            font-size: 11px;
+            color: #555;
+            letter-spacing: 2px;
+            opacity: 0;
+            animation: rise 1.5s ease 1.8s forwards;
+        }
+
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #hint {
+            position: absolute;
+            bottom: 30px; left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #333;
+            letter-spacing: 3px;
+            z-index: 5;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+
+        #counter {
+            position: absolute;
+            top: 20px; right: 20px;
+            font-size: 11px;
+            color: #444;
+            letter-spacing: 2px;
+            z-index: 5;
+        }
+        #counter span { color: #7c4dff; }
+
+        @media (max-width: 600px) {
+            #hint { font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="counter">已连线 <span id="conn-count">0</span> / <span id="conn-total">0</span></div>
+    <div id="hint">拖拽任意节点，让所有线连向彼此</div>
+    <div id="overlay">
+        <div class="overlay-bg"></div>
+        <div class="overlay-content">
+            <div class="overlay-heart">&#10084;</div>
+            <div class="overlay-title">跨越万物，<span class="pink">只为连向你</span></div>
+            <div class="overlay-sub">所有线索，都指向同一个答案</div>
+            <div class="overlay-connections">KNOWLEDGE GRAPH COMPLETE — ALL EDGES CONVERGED</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let W, H, dpr;
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            W = window.innerWidth;
+            H = window.innerHeight;
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            canvas.style.width = W + 'px';
+            canvas.style.height = H + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        const categories = [
+            { name: '美食', color: '#ff6b6b', emoji: '🍜' },
+            { name: '音乐', color: '#c084fc', emoji: '🎵' },
+            { name: '城市', color: '#60a5fa', emoji: '🏙' },
+            { name: '电影', color: '#fbbf24', emoji: '🎬' },
+            { name: '旅行', color: '#34d399', emoji: '✈️' },
+            { name: '阅读', color: '#f472b6', emoji: '📚' },
+            { name: '运动', color: '#fb923c', emoji: '⚽' },
+            { name: '星空', color: '#818cf8', emoji: '⭐' },
+            { name: '咖啡', color: '#a78bfa', emoji: '☕' },
+            { name: '日落', color: '#f59e0b', emoji: '🌅' },
+            { name: '雨天', color: '#67e8f9', emoji: '🌧' },
+            { name: '春天', color: '#86efac', emoji: '🌸' },
+            { name: '诗歌', color: '#e879f9', emoji: '📝' },
+            { name: '摄影', color: '#38bdf8', emoji: '📷' },
+            { name: '深夜', color: '#a78bfa', emoji: '🌙' },
+            { name: '大海', color: '#22d3ee', emoji: '🌊' },
+        ];
+
+        const CORE_ME = { name: '我', color: '#4fc3f7', isCore: true };
+        const CORE_YOU = { name: '你', color: '#ff6b9d', isCore: true };
+
+        const nodes = [];
+        const totalCategoryNodes = categories.length;
+        const totalEdges = totalCategoryNodes * 2;
+        document.getElementById('conn-total').textContent = totalEdges;
+
+        const coreDist = Math.min(W, H) * 0.15;
+        CORE_ME.x = W / 2 - coreDist; CORE_ME.y = H / 2;
+        CORE_ME.vx = 0; CORE_ME.vy = 0; CORE_ME.radius = 32;
+        CORE_YOU.x = W / 2 + coreDist; CORE_YOU.y = H / 2;
+        CORE_YOU.vx = 0; CORE_YOU.vy = 0; CORE_YOU.radius = 32;
+
+        nodes.push(CORE_ME, CORE_YOU);
+
+        for (let i = 0; i < categories.length; i++) {
+            const angle = (i / categories.length) * Math.PI * 2;
+            const dist = Math.min(W, H) * 0.3 + Math.random() * 40;
+            const cat = categories[i];
+            nodes.push({
+                name: cat.name,
+                color: cat.color,
+                emoji: cat.emoji,
+                isCore: false,
+                x: W / 2 + Math.cos(angle) * dist,
+                y: H / 2 + Math.sin(angle) * dist,
+                vx: 0, vy: 0,
+                radius: 18,
+                baseX: W / 2 + Math.cos(angle) * dist,
+                baseY: H / 2 + Math.sin(angle) * dist,
+                _dragging: false,
+            });
+        }
+
+        const edges = [];
+        let connectedCount = 0;
+        for (let i = 2; i < nodes.length; i++) {
+            edges.push({ from: i, to: 0, connected: false });
+            edges.push({ from: i, to: 1, connected: false });
+        }
+
+        let dragNode = null;
+        let hasInteracted = false;
+        let converged = false;
+
+        function getNodeAt(x, y) {
+            for (const n of nodes) {
+                const dx = x - n.x, dy = y - n.y;
+                if (dx * dx + dy * dy < (n.radius + 10) * (n.radius + 10)) return n;
+            }
+            return null;
+        }
+
+        canvas.addEventListener('pointerdown', e => {
+            if (converged) return;
+            const n = getNodeAt(e.clientX, e.clientY);
+            if (n && !n.isCore) {
+                dragNode = n;
+                n._dragging = true;
+            }
+        });
+
+        canvas.addEventListener('pointermove', e => {
+            if (dragNode) {
+                dragNode.x = e.clientX;
+                dragNode.y = e.clientY;
+                if (!hasInteracted) {
+                    hasInteracted = true;
+                    setTimeout(startConvergence, 600);
+                }
+            }
+        });
+
+        canvas.addEventListener('pointerup', () => {
+            if (dragNode) dragNode._dragging = false;
+            dragNode = null;
+        });
+
+        function startConvergence() {
+            if (converged) return;
+            converged = true;
+
+            const duration = 2000;
+            const start = performance.now();
+
+            function tick(now) {
+                const t = Math.min((now - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - t, 3);
+                connectedCount = Math.floor(eased * totalEdges);
+                document.getElementById('conn-count').textContent = connectedCount;
+
+                for (let i = 0; i < edges.length; i++) {
+                    edges[i].connected = i < connectedCount;
+                }
+
+                if (t < 1) {
+                    requestAnimationFrame(tick);
+                } else {
+                    connectedCount = totalEdges;
+                    document.getElementById('conn-count').textContent = totalEdges;
+                    setTimeout(() => {
+                        document.getElementById('overlay').classList.add('visible');
+                        document.getElementById('hint').style.display = 'none';
+                        document.getElementById('counter').style.display = 'none';
+                    }, 400);
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+
+        function updatePhysics() {
+            if (converged) return;
+            const time = performance.now() * 0.0003;
+
+            for (let i = 2; i < nodes.length; i++) {
+                const n = nodes[i];
+                if (n._dragging) continue;
+
+                const springK = 0.02;
+                n.vx += (n.baseX - n.x) * springK;
+                n.vy += (n.baseY - n.y) * springK;
+
+                for (let j = 2; j < nodes.length; j++) {
+                    if (i === j) continue;
+                    const m = nodes[j];
+                    const dx = n.x - m.x, dy = n.y - m.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const repulse = 800 / (dist * dist);
+                    n.vx += (dx / dist) * repulse;
+                    n.vy += (dy / dist) * repulse;
+                }
+
+                n.vx += Math.cos(time + i) * 0.03;
+                n.vy += Math.sin(time + i * 0.7) * 0.03;
+                n.vx *= 0.92;
+                n.vy *= 0.92;
+                n.x += n.vx;
+                n.y += n.vy;
+
+                n.x = Math.max(n.radius, Math.min(W - n.radius, n.x));
+                n.y = Math.max(n.radius, Math.min(H - n.radius, n.y));
+            }
+        }
+
+        function hexAlpha(hex, alpha) {
+            const a = Math.round(alpha * 255).toString(16).padStart(2, '0');
+            return hex + a;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#05050f';
+            ctx.fillRect(0, 0, W, H);
+
+            // Subtle dot pattern
+            ctx.fillStyle = 'rgba(255,255,255,0.012)';
+            for (let x = 0; x < W; x += 40) {
+                for (let y = 0; y < H; y += 40) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 0.8, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Edges
+            for (const edge of edges) {
+                const from = nodes[edge.from];
+                const to = nodes[edge.to];
+                if (!from || !to) continue;
+
+                if (edge.connected) {
+                    const grad = ctx.createLinearGradient(from.x, from.y, to.x, to.y);
+                    grad.addColorStop(0, hexAlpha(from.color, 0.6));
+                    grad.addColorStop(1, hexAlpha(to.color, 0.6));
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = 1.5;
+                    ctx.globalAlpha = 0.6;
+                    ctx.beginPath();
+                    ctx.moveTo(from.x, from.y);
+                    ctx.lineTo(to.x, to.y);
+                    ctx.stroke();
+
+                    // Glow
+                    ctx.strokeStyle = hexAlpha(from.color, 0.12);
+                    ctx.lineWidth = 6;
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                } else {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                    ctx.lineWidth = 0.5;
+                    ctx.setLineDash([4, 6]);
+                    ctx.beginPath();
+                    ctx.moveTo(from.x, from.y);
+                    ctx.lineTo(to.x, to.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            }
+
+            // Nodes
+            for (let i = 0; i < nodes.length; i++) {
+                const n = nodes[i];
+
+                if (n.isCore) {
+                    // Core glow
+                    const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.radius * 3);
+                    glow.addColorStop(0, hexAlpha(n.color, 0.2));
+                    glow.addColorStop(1, hexAlpha(n.color, 0));
+                    ctx.fillStyle = glow;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius * 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = hexAlpha(n.color, 0.15);
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius * 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = hexAlpha(n.color, 0.25);
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = n.color;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    // Pulse ring
+                    const pulse = Math.sin(performance.now() * 0.003) * 0.5 + 0.5;
+                    ctx.strokeStyle = hexAlpha(n.color, pulse * 0.15);
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius + 8 + pulse * 10, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    ctx.fillStyle = n.color;
+                    ctx.font = 'bold 20px "PingFang SC", sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(n.name, n.x, n.y);
+
+                    ctx.fillStyle = '#555';
+                    ctx.font = '9px SF Mono, monospace';
+                    ctx.fillText(n === CORE_ME ? 'SOURCE' : 'TARGET', n.x, n.y + n.radius + 16);
+                } else {
+                    ctx.globalAlpha = n._dragging ? 1 : 0.7;
+
+                    ctx.strokeStyle = hexAlpha(n.color, 0.25);
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius + 4, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#0d0d1a';
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = hexAlpha(n.color, 0.5);
+                    ctx.lineWidth = 1.2;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    ctx.font = '14px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(n.emoji, n.x, n.y);
+
+                    ctx.fillStyle = n.color;
+                    ctx.font = '10px "PingFang SC", sans-serif';
+                    ctx.fillText(n.name, n.x, n.y + n.radius + 14);
+
+                    ctx.globalAlpha = 1;
+                }
+            }
+        }
+
+        function loop() {
+            updatePhysics();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+
+        // Tap fallback for mobile
+        canvas.addEventListener('click', () => {
+            if (!hasInteracted && !converged) {
+                hasInteracted = true;
+                setTimeout(startConvergence, 600);
+            }
+        });
+    </script>
+</body>
+</html>

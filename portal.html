@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AETHER | 表白模板中心</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a; color: #fff;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+        }
+
+        header { text-align: center; padding: 60px 20px 40px; }
+        .logo {
+            font-size: 28px; font-weight: 300;
+            letter-spacing: 8px; color: #D4AF37; margin-bottom: 10px;
+        }
+        header h1 {
+            font-size: clamp(24px, 5vw, 42px);
+            font-weight: 200; letter-spacing: 4px; margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffcce6, #D4AF37, #00d4ff, #ff6b9d);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        header p { font-size: 15px; color: #888; letter-spacing: 2px; }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 28px; padding: 20px 5vw 80px;
+            max-width: 1400px; margin: 0 auto;
+        }
+
+        .template-card {
+            background: #141414;
+            border: 1px solid rgba(212,175,55,0.1);
+            border-radius: 16px; overflow: hidden;
+            transition: all 0.4s ease;
+        }
+        .template-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(212,175,55,0.3);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+
+        .card-preview { height: 200px; position: relative; overflow: hidden; }
+        .preview-inner { width: 100%; height: 100%; transition: transform 0.4s ease; }
+        .template-card:hover .preview-inner { transform: scale(1.05); }
+
+        .preview-meteor {
+            background: linear-gradient(to bottom, #0a051b, #020107);
+        }
+        .preview-meteor .star {
+            position: absolute; width: 2px; height: 2px;
+            background: #fff; border-radius: 50%;
+            animation: twinkle 2s infinite;
+        }
+        @keyframes twinkle { 0%,100%{opacity:0.3;} 50%{opacity:1;} }
+        .preview-meteor .meteor-line {
+            position: absolute; width: 60px; height: 1px;
+            background: linear-gradient(to right, rgba(255,255,255,0.8), rgba(212,175,55,0.3), transparent);
+            transform: rotate(-35deg);
+            animation: meteorMove 3s linear infinite;
+        }
+        @keyframes meteorMove { 0%{left:110%;top:10%;} 100%{left:-10%;top:60%;} }
+
+        .preview-sakura {
+            background: linear-gradient(135deg, #fce4ec, #fff);
+        }
+        .preview-sakura .petal {
+            position: absolute; width: 8px; height: 10px;
+            background: #ffb7c5; border-radius: 50% 10% 50% 50%;
+            animation: petalFall 4s linear infinite;
+        }
+        @keyframes petalFall {
+            0%{top:-10px;transform:translateX(0) rotate(0);opacity:0.8;}
+            100%{top:210px;transform:translateX(20px) rotate(180deg);opacity:0;}
+        }
+
+        .preview-cyber { background: #000; }
+        .preview-cyber .code-line {
+            font-family: 'Courier New', monospace; font-size: 11px;
+            color: #00ff41; padding: 2px 15px; opacity: 0.8;
+            text-shadow: 0 0 3px #00ff41;
+            animation: codeFade 2s infinite;
+        }
+        @keyframes codeFade { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+
+        .preview-luxury {
+            background: #f5f0eb;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .preview-luxury .luxury-text {
+            font-family: Georgia, serif; font-size: 22px;
+            color: #2c2c2c; letter-spacing: 4px; font-weight: 300;
+            animation: luxuryFade 3s infinite ease-in-out;
+        }
+        @keyframes luxuryFade { 0%,100%{opacity:0.6;} 50%{opacity:1;} }
+
+        .preview-pixel {
+            background: #202028;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .preview-pixel .pixel-text {
+            font-family: 'Courier New', monospace;
+            font-size: 18px; color: #e44040;
+            text-shadow: 2px 2px 0 #000;
+            animation: pixelBlink 1s infinite;
+        }
+        @keyframes pixelBlink { 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
+
+        .preview-overlay {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .template-card:hover .preview-overlay { opacity: 1; }
+        .preview-btn {
+            padding: 10px 24px; border: 1px solid #fff;
+            border-radius: 25px; color: #fff; font-size: 13px;
+            cursor: pointer; background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            transition: all 0.3s; text-decoration: none;
+        }
+        .preview-btn:hover { background: rgba(255,255,255,0.15); }
+
+        .card-info { padding: 20px; }
+        .card-info h3 {
+            font-size: 18px; font-weight: 400;
+            letter-spacing: 2px; margin-bottom: 10px;
+        }
+        .card-desc {
+            font-size: 13px; color: #888;
+            line-height: 1.6; margin-bottom: 14px;
+        }
+        .card-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+        .tag {
+            padding: 4px 12px; border-radius: 12px;
+            font-size: 11px; letter-spacing: 1px;
+            background: rgba(212,175,55,0.1); color: #D4AF37;
+            border: 1px solid rgba(212,175,55,0.15);
+        }
+        .card-actions { display: flex; gap: 10px; }
+        .btn-preview {
+            flex: 1; padding: 10px; border: 1px solid rgba(212,175,55,0.3);
+            border-radius: 8px; background: transparent; color: #D4AF37;
+            font-size: 13px; cursor: pointer; transition: all 0.3s;
+            letter-spacing: 1px; text-align: center;
+        }
+        .btn-preview:hover { background: rgba(212,175,55,0.1); }
+        .btn-copy {
+            flex: 1; padding: 10px; border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #D4AF37, #c9a030);
+            color: #0a0a0a; font-size: 13px; cursor: pointer;
+            transition: all 0.3s; letter-spacing: 1px; font-weight: 500;
+        }
+        .btn-copy:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(212,175,55,0.3); }
+
+        #toast {
+            position: fixed; bottom: 30px; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(212,175,55,0.95); color: #0a0a0a;
+            padding: 12px 30px; border-radius: 25px;
+            font-size: 14px; letter-spacing: 1px;
+            z-index: 999; transition: transform 0.4s ease;
+            box-shadow: 0 4px 20px rgba(212,175,55,0.3);
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+
+        @media (max-width: 768px) {
+            .card-grid { grid-template-columns: 1fr; padding: 20px 20px 60px; }
+            header { padding: 40px 20px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">AETHER</div>
+        <h1>表白模板中心</h1>
+        <p>选择你的风格，用代码传递心意</p>
+    </header>
+
+    <div class="card-grid">
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-meteor">
+                    <div class="star" style="left:15%;top:20%;"></div>
+                    <div class="star" style="left:45%;top:35%;animation-delay:0.5s;"></div>
+                    <div class="star" style="left:75%;top:15%;animation-delay:1s;"></div>
+                    <div class="star" style="left:30%;top:60%;animation-delay:1.5s;"></div>
+                    <div class="star" style="left:60%;top:50%;animation-delay:0.8s;"></div>
+                    <div class="star" style="left:85%;top:70%;animation-delay:1.2s;"></div>
+                    <div class="meteor-line"></div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="style1_meteor.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>浪漫星空</h3>
+                <div class="card-desc">深邃夜空、流星划过、粒子爱心烟花，极致浪漫的视觉盛宴</div>
+                <div class="card-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">粒子特效</span>
+                    <span class="tag">毛玻璃</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('style1_meteor.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('style1_meteor.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-sakura">
+                    <div class="petal" style="left:20%;animation-delay:0s;"></div>
+                    <div class="petal" style="left:50%;animation-delay:1s;"></div>
+                    <div class="petal" style="left:80%;animation-delay:2s;"></div>
+                    <div class="petal" style="left:35%;animation-delay:0.5s;"></div>
+                    <div class="petal" style="left:65%;animation-delay:1.5s;"></div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="style2_sakura.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>日系樱花</h3>
+                <div class="card-desc">樱花飘落、恋爱纪念册、趣味闪避按钮，日式治愈风格</div>
+                <div class="card-tags">
+                    <span class="tag">CSS动画</span>
+                    <span class="tag">趣味互动</span>
+                    <span class="tag">拍立得</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('style2_sakura.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('style2_sakura.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-cyber">
+                    <div class="code-line">&gt; init love_protocol.sh</div>
+                    <div class="code-line" style="animation-delay:0.3s">&gt; scanning heartbeat... [OK]</div>
+                    <div class="code-line" style="animation-delay:0.6s">&gt; dopamine: CRITICAL</div>
+                    <div class="code-line" style="animation-delay:0.9s">&gt; heart sync: SUCCESS</div>
+                    <div class="code-line" style="animation-delay:1.2s">&gt; connection: ESTABLISHED</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="style3_cyber.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>赛博朋克</h3>
+                <div class="card-desc">终端代码、ASCII爱心、毫秒计时器，程序员的极致浪漫</div>
+                <div class="card-tags">
+                    <span class="tag">终端风</span>
+                    <span class="tag">霓虹特效</span>
+                    <span class="tag">计时器</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('style3_cyber.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('style3_cyber.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-luxury">
+                    <div class="luxury-text">致你</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="style4_luxury.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>轻奢极简</h3>
+                <div class="card-desc">高级感排版、鼠标视差光效、隐藏情书，现代优雅风格</div>
+                <div class="card-tags">
+                    <span class="tag">高级排版</span>
+                    <span class="tag">视差动效</span>
+                    <span class="tag">音乐播放器</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('style4_luxury.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('style4_luxury.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-pixel">
+                    <div class="pixel-text">PRESS START</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="style5_pixel.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>复古像素</h3>
+                <div class="card-desc">8-bit游戏风格、像素角色、游戏选择肢，趣味像素冒险</div>
+                <div class="card-tags">
+                    <span class="tag">像素艺术</span>
+                    <span class="tag">游戏交互</span>
+                    <span class="tag">趣味动画</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('style5_pixel.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('style5_pixel.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-cyber">
+                    <div class="code-line" style="color:#c084fc">&gt; 黑胶唱片旋转中...</div>
+                    <div class="code-line" style="animation-delay:0.3s;color:#ff6b9d">♪ 歌词逐行亮起</div>
+                    <div class="code-line" style="animation-delay:0.6s;color:#D4AF37">♪ 唱针轻触沟槽</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t1_vinyl.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>黑胶唱片机</h3>
+                <div class="card-desc">拟真转盘、唱臂动画、歌词随进度亮起，复古浪漫</div>
+                <div class="card-tags">
+                    <span class="tag">拟物设计</span>
+                    <span class="tag">CSS动画</span>
+                    <span class="tag">歌词同步</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t1_vinyl.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t1_vinyl.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-pixel">
+                    <div class="pixel-text" style="font-size:14px;color:#c084fc">刮开涂层...</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t2_scratch.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>浪漫刮刮乐</h3>
+                <div class="card-desc">Canvas刮刮涂层、像素计数检测、揭开心意</div>
+                <div class="card-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">刮擦交互</span>
+                    <span class="tag">惊喜揭晓</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t2_scratch.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t2_scratch.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-sakura">
+                    <div class="petal" style="background:#57c5ff;left:25%;animation-delay:0s;"></div>
+                    <div class="petal" style="background:#57c5ff;left:55%;animation-delay:0.8s;"></div>
+                    <div style="position:absolute;left:20%;top:60%;font-size:11px;color:#57c5ff;">对方: 在吗?</div>
+                    <div style="position:absolute;left:50%;top:80%;font-size:11px;color:#34d399;">我: 我喜欢你</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t3_imessage.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>iMessage 拟真对话</h3>
+                <div class="card-desc">仿真聊天界面、打字指示器、消息弹珠弹簧动画</div>
+                <div class="card-tags">
+                    <span class="tag">拟真交互</span>
+                    <span class="tag">消息气泡</span>
+                    <span class="tag">弹簧动画</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t3_imessage.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t3_imessage.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-meteor">
+                    <div style="position:absolute;left:10%;top:30%;font-size:10px;color:rgba(255,255,255,0.5);">SCENE 01</div>
+                    <div style="position:absolute;left:10%;top:50%;width:40px;height:30px;background:#f48fb1;border-radius:2px;"></div>
+                    <div style="position:absolute;left:60%;top:40%;font-size:10px;color:rgba(255,255,255,0.3);">胶片滚动</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t4_film.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>电影胶片滚动</h3>
+                <div class="card-desc">胶片边框、电影颗粒感、滚动叙事、场景交替</div>
+                <div class="card-tags">
+                    <span class="tag">SVG纹理</span>
+                    <span class="tag">滚动叙事</span>
+                    <span class="tag">电影感</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t4_film.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t4_film.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-luxury">
+                    <div style="font-size:12px;color:#1a237e;letter-spacing:2px;">NOW &#9992; U</div>
+                    <div style="font-size:10px;color:#999;margin-top:4px;">LOVE-1314</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t5_boarding.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>定制登机牌</h3>
+                <div class="card-desc">3D翻转登机牌、NOW到有你的未来、悬停翻面</div>
+                <div class="card-tags">
+                    <span class="tag">3D翻转</span>
+                    <span class="tag">拟物设计</span>
+                    <span class="tag">创意文案</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t5_boarding.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t5_boarding.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-meteor">
+                    <div class="star" style="left:20%;top:25%;animation-delay:0s;"></div>
+                    <div class="star" style="left:50%;top:40%;animation-delay:0.3s;"></div>
+                    <div class="star" style="left:70%;top:20%;animation-delay:0.7s;"></div>
+                    <div class="star" style="left:35%;top:65%;animation-delay:1s;"></div>
+                    <div class="star" style="left:80%;top:55%;animation-delay:0.5s;"></div>
+                    <div style="position:absolute;left:40%;top:35%;color:rgba(180,160,255,0.3);font-size:10px;">长按连线</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t6_constellation.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>3D 星云连线</h3>
+                <div class="card-desc">星空视差、长按星体连线、粒子爱心成型</div>
+                <div class="card-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">视差动效</span>
+                    <span class="tag">粒子连线</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t6_constellation.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t6_constellation.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-luxury">
+                    <div style="position:absolute;left:20%;top:30%;width:40px;height:30px;background:rgba(255,182,193,0.4);border-radius:50%;"></div>
+                    <div style="position:absolute;left:50%;top:50%;width:50px;height:35px;background:rgba(173,216,230,0.3);border-radius:50%;"></div>
+                    <div style="position:absolute;left:35%;top:60%;width:35px;height:25px;background:rgba(255,160,180,0.3);border-radius:50%;"></div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t7_watercolor.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>水彩自然晕染</h3>
+                <div class="card-desc">Canvas水彩混合、multiply混合模式、纸张纹理</div>
+                <div class="card-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">混合模式</span>
+                    <span class="tag">自然纹理</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t7_watercolor.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t7_watercolor.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-meteor">
+                    <div class="star" style="left:25%;top:35%;width:3px;height:3px;background:#64c8ff;"></div>
+                    <div class="star" style="left:55%;top:50%;width:3px;height:3px;background:#64c8ff;animation-delay:0.5s;"></div>
+                    <div class="star" style="left:40%;top:60%;width:3px;height:3px;background:#64c8ff;animation-delay:1s;"></div>
+                    <div style="position:absolute;left:45%;top:40%;color:rgba(100,200,255,0.3);font-size:10px;">移动鼠标</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t8_particles.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>粒子流体随动</h3>
+                <div class="card-desc">鼠标排斥力场、粒子连线、拖尾残影效果</div>
+                <div class="card-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">物理模拟</span>
+                    <span class="tag">鼠标交互</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t8_particles.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t8_particles.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-sakura">
+                    <div style="font-size:24px;position:absolute;left:45%;top:20%;">&#9992;</div>
+                    <div style="position:absolute;left:10%;top:60%;width:60px;height:40px;background:rgba(250,248,245,0.2);border-radius:4px;"></div>
+                    <div style="position:absolute;left:12%;top:65%;font-size:8px;color:rgba(255,255,255,0.4);">信件</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t9_paperplane.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>纸飞机跨屏</h3>
+                <div class="card-desc">贝塞尔曲线飞行、云朵飘动、信件弹簧弹出</div>
+                <div class="card-tags">
+                    <span class="tag">CSS动画</span>
+                    <span class="tag">曲线轨迹</span>
+                    <span class="tag">叙事动画</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t9_paperplane.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t9_paperplane.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-cyber">
+                    <div style="font-size:16px;color:#ff0080;text-shadow:0 0 10px #ff0080;animation:twinkle 1.5s infinite;">我 喜 欢 你</div>
+                    <div style="font-size:12px;color:#00c8ff;text-shadow:0 0 8px #00c8ff;margin-top:4px;animation:twinkle 2s infinite 0.5s;">LIKE YOU</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t10_cyberneon.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>赛博霓虹灯</h3>
+                <div class="card-desc">砖墙背景、闪烁霓虹灯管、通电开关、滋滋音效</div>
+                <div class="card-tags">
+                    <span class="tag">CSS闪烁</span>
+                    <span class="tag">Web Audio</span>
+                    <span class="tag">光晕效果</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t10_cyberneon.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t10_cyberneon.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-cyber">
+                    <div class="code-line">&gt; ./love_model</div>
+                    <div class="code-line" style="animation-delay:0.3s">Layer 32/32 100%</div>
+                    <div class="code-line" style="animation-delay:0.6s">置信度: 99.97%</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t11_llm_terminal.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>大模型推理终端</h3>
+                <div class="card-desc">AI推理过程模拟、逐层加载、情感分析结论</div>
+                <div class="card-tags">
+                    <span class="tag">终端风</span>
+                    <span class="tag">逐行输出</span>
+                    <span class="tag">AI趣味</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t11_llm_terminal.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t11_llm_terminal.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-meteor">
+                    <div style="font-size:12px;color:#ff6b9d;position:absolute;left:15%;top:20%;">120 BPM</div>
+                    <div style="position:absolute;left:60%;top:30%;width:40px;height:40px;border-radius:50%;border:3px solid #c084fc;"></div>
+                    <div style="font-size:10px;color:rgba(255,255,255,0.4);position:absolute;left:62%;top:55%;">90%</div>
+                    <div style="position:absolute;left:15%;top:60%;width:50px;height:30px;display:flex;gap:3px;align-items:flex-end;">
+                        <div style="width:8px;height:15px;background:linear-gradient(to top,#ff6b9d,#c084fc);border-radius:2px;"></div>
+                        <div style="width:8px;height:22px;background:linear-gradient(to top,#ff6b9d,#c084fc);border-radius:2px;"></div>
+                        <div style="width:8px;height:12px;background:linear-gradient(to top,#ff6b9d,#c084fc);border-radius:2px;"></div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t12_data_dashboard.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>数据可视化大屏</h3>
+                <div class="card-desc">心跳图、环形图、柱状图、恋爱时间线看板</div>
+                <div class="card-tags">
+                    <span class="tag">数据看板</span>
+                    <span class="tag">Canvas图表</span>
+                    <span class="tag">毛玻璃</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t12_data_dashboard.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t12_data_dashboard.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-cyber">
+                    <div style="display:flex;justify-content:center;gap:12px;margin-top:60px;">
+                        <div style="width:30px;height:30px;background:#0d0d1a;border:2px solid rgba(255,255,255,0.2);border-radius:6px;display:flex;justify-content:center;align-items:center;color:#fff;font-size:14px;">5</div>
+                        <div style="width:30px;height:30px;background:#0d0d1a;border:2px solid rgba(255,255,255,0.2);border-radius:6px;display:flex;justify-content:center;align-items:center;color:#fff;font-size:14px;">2</div>
+                        <div style="width:30px;height:30px;background:#0d0d1a;border:2px solid rgba(255,255,255,0.2);border-radius:6px;display:flex;justify-content:center;align-items:center;color:#fff;font-size:14px;">0</div>
+                        <div style="width:30px;height:30px;background:#0d0d1a;border:2px solid rgba(255,255,255,0.2);border-radius:6px;display:flex;justify-content:center;align-items:center;color:#fff;font-size:14px;">1</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t13_password_lock.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>密码箱与解密</h3>
+                <div class="card-desc">4位密码转盘、拖拽旋转、解锁后弹出情书</div>
+                <div class="card-tags">
+                    <span class="tag">拖拽交互</span>
+                    <span class="tag">密码锁</span>
+                    <span class="tag">粒子庆祝</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t13_password_lock.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t13_password_lock.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-cyber">
+                    <div class="code-line" style="color:#569cd6;">interface</div>
+                    <div class="code-line" style="animation-delay:0.3s;color:#6a9955;">// 编译通过</div>
+                    <div class="code-line" style="animation-delay:0.6s;color:#ce9178;">"我喜欢你"</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t14_code_comment.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>极简代码注释</h3>
+                <div class="card-desc">VS Code风格编辑器、语法高亮、逐行打字</div>
+                <div class="card-tags">
+                    <span class="tag">编辑器风</span>
+                    <span class="tag">语法高亮</span>
+                    <span class="tag">逐行显示</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t14_code_comment.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t14_code_comment.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:radial-gradient(ellipse, #1a0a2e, #0d0515);">
+                    <div style="position:absolute;left:20%;top:30%;width:50px;height:70px;background:linear-gradient(135deg,#2a1a4a,#1a0a3a);border:1px solid rgba(212,175,55,0.3);border-radius:4px;display:flex;justify-content:center;align-items:center;color:rgba(212,175,55,0.3);font-size:20px;">&#9788;</div>
+                    <div style="position:absolute;left:50%;top:30%;width:50px;height:70px;background:linear-gradient(135deg,#2a1a4a,#1a0a3a);border:1px solid rgba(212,175,55,0.3);border-radius:4px;display:flex;justify-content:center;align-items:center;color:rgba(212,175,55,0.3);font-size:20px;">&#9789;</div>
+                    <div style="position:absolute;left:75%;top:30%;width:50px;height:70px;background:linear-gradient(135deg,#2a1a4a,#1a0a3a);border:1px solid rgba(212,175,55,0.3);border-radius:4px;display:flex;justify-content:center;align-items:center;color:rgba(212,175,55,0.3);font-size:20px;">&#9790;</div>
+                    <div style="position:absolute;left:40%;top:75%;font-size:9px;color:rgba(255,255,255,0.2);">点击翻开</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t15_tarot.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>塔罗牌命运翻转</h3>
+                <div class="card-desc">3D翻转塔罗牌、命运解读、三牌同开启示</div>
+                <div class="card-tags">
+                    <span class="tag">3D翻转</span>
+                    <span class="tag">神秘风</span>
+                    <span class="tag">命运解读</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t15_tarot.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t15_tarot.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-luxury">
+                    <div style="font-size:10px;color:#1a1a1a;letter-spacing:2px;font-weight:900;">恋爱日报</div>
+                    <div style="font-size:8px;color:#666;margin-top:3px;">惊！有人暗恋你已久</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t16_retro_newspaper.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>复古头条报纸</h3>
+                <div class="card-desc">报纸排版、双栏分列、大写首字母、新闻体告白</div>
+                <div class="card-tags">
+                    <span class="tag">报纸排版</span>
+                    <span class="tag">复古风</span>
+                    <span class="tag">新闻体</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t16_retro_newspaper.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t16_retro_newspaper.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-meteor">
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:80px;margin:50px auto 0;">
+                        <div style="width:24px;height:24px;background:linear-gradient(135deg,#ff6b9d,#c084fc);border-radius:3px;display:flex;justify-content:center;align-items:center;font-size:10px;color:#fff;">我</div>
+                        <div style="width:24px;height:24px;background:linear-gradient(135deg,#c084fc,#60a5fa);border-radius:3px;display:flex;justify-content:center;align-items:center;font-size:10px;color:#fff;">喜</div>
+                        <div style="width:24px;height:24px;background:linear-gradient(135deg,#60a5fa,#34d399);border-radius:3px;display:flex;justify-content:center;align-items:center;font-size:10px;color:#fff;">欢</div>
+                        <div style="width:24px;height:24px;border:1px dashed rgba(255,255,255,0.2);border-radius:3px;"></div>
+                        <div style="width:24px;height:24px;border:1px dashed rgba(255,255,255,0.2);border-radius:3px;"></div>
+                        <div style="width:24px;height:24px;border:1px dashed rgba(255,255,255,0.2);border-radius:3px;"></div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t17_puzzle.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>拼图还原</h3>
+                <div class="card-desc">拖拽拼图碎片、3x3网格、拼出告白文字</div>
+                <div class="card-tags">
+                    <span class="tag">拖拽拼图</span>
+                    <span class="tag">游戏交互</span>
+                    <span class="tag">渐变色块</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t17_puzzle.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t17_puzzle.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-cyber">
+                    <div style="font-size:10px;color:#ff0;letter-spacing:2px;text-align:center;margin-top:40px;">SELECT PLAYER</div>
+                    <div style="display:flex;gap:8px;justify-content:center;margin-top:15px;">
+                        <div style="width:35px;height:35px;background:#1a1a1a;border:1px solid #ff0;border-radius:4px;display:flex;justify-content:center;align-items:center;font-size:16px;">&#129340;</div>
+                        <div style="width:35px;height:35px;background:#1a1a1a;border:1px solid #333;border-radius:4px;display:flex;justify-content:center;align-items:center;font-size:16px;">&#128221;</div>
+                        <div style="width:35px;height:35px;background:#1a1a1a;border:1px solid #333;border-radius:4px;display:flex;justify-content:center;align-items:center;font-size:16px;">&#128170;</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t18_arcade_select.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>街机格斗选人</h3>
+                <div class="card-desc">街机选人界面、角色属性条、VS闪光动画</div>
+                <div class="card-tags">
+                    <span class="tag">街机风</span>
+                    <span class="tag">角色选择</span>
+                    <span class="tag">VS动画</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t18_arcade_select.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t18_arcade_select.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:linear-gradient(180deg,#87CEEB,#8B7355);">
+                    <div style="font-size:28px;position:absolute;left:42%;top:35%;">&#9200;</div>
+                    <div style="font-size:9px;color:rgba(255,255,255,0.7);position:absolute;left:30%;top:65%;">埋入时间的土壤</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t19_time_capsule.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>时光胶囊掩埋</h3>
+                <div class="card-desc">埋藏时光胶囊、泥土覆盖、花朵发芽动画</div>
+                <div class="card-tags">
+                    <span class="tag">叙事动画</span>
+                    <span class="tag">场景过渡</span>
+                    <span class="tag">诗意文案</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t19_time_capsule.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t19_time_capsule.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:linear-gradient(180deg,#3e2723,#5d4037);">
+                    <div style="width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,#6d4c41,#3e2723);position:absolute;left:35%;top:25%;border:2px solid rgba(255,255,255,0.08);"></div>
+                    <div style="font-size:20px;position:absolute;left:25%;top:15%;">&#9749;</div>
+                    <div style="font-size:9px;color:rgba(255,255,255,0.4);position:absolute;left:35%;top:75%;">开始拉花</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t20_latte_art.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>暖冬咖啡拉花</h3>
+                <div class="card-desc">咖啡杯拟物、Canvas拉花心形、蒸汽动画</div>
+                <div class="card-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">拟物设计</span>
+                    <span class="tag">渐显动画</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t20_latte_art.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t20_latte_art.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-meteor">
+                    <svg style="position:absolute;left:10%;top:20%;width:80%;height:60%;" viewBox="0 0 100 60">
+                        <polyline fill="none" stroke="#4fc3f7" stroke-width="0.8" points="0,5 5,8 10,15 15,25 20,32 25,38 30,42 35,46 40,48 45,50 50,52 55,53 60,54 65,55 70,55 75,56 80,56 85,56 90,57 95,57 100,57" opacity="0.8"/>
+                        <polyline fill="url(#grad)" points="0,5 5,8 10,15 15,25 20,32 25,38 30,42 35,46 40,48 45,50 50,52 55,53 60,54 65,55 70,55 75,56 80,56 85,56 90,57 95,57 100,57 100,60 0,60" opacity="0.3"/>
+                        <defs><linearGradient id="grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4fc3f7"/><stop offset="100%" stop-color="transparent"/></linearGradient></defs>
+                    </svg>
+                    <div style="position:absolute;left:12%;top:15%;font-size:8px;color:#4fc3f7;">1.0</div>
+                    <div style="position:absolute;left:12%;top:75%;font-size:8px;color:#f48fb1;">0.0</div>
+                    <div style="position:absolute;left:70%;top:65%;font-size:9px;color:#f48fb1;text-shadow:0 0 8px rgba(244,143,177,0.5);">&#9679; Loss&#8595;</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t21_losscurve.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>Loss Curve 收敛</h3>
+                <div class="card-desc">动态损失曲线、训练指标面板、收敛后告白揭晓</div>
+                <div class="card-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">数据可视化</span>
+                    <span class="tag">极客浪漫</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t21_losscurve.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t21_losscurve.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#05050f;">
+                    <svg style="position:absolute;left:10%;top:15%;width:80%;height:70%;" viewBox="0 0 100 70">
+                        <circle cx="30" cy="35" r="5" fill="#4fc3f7" opacity="0.8"/>
+                        <circle cx="70" cy="35" r="5" fill="#ff6b9d" opacity="0.8"/>
+                        <circle cx="15" cy="15" r="3" fill="#ff6b6b" opacity="0.6"/>
+                        <circle cx="50" cy="10" r="3" fill="#c084fc" opacity="0.6"/>
+                        <circle cx="85" cy="15" r="3" fill="#fbbf24" opacity="0.6"/>
+                        <circle cx="20" cy="55" r="3" fill="#34d399" opacity="0.6"/>
+                        <circle cx="80" cy="55" r="3" fill="#60a5fa" opacity="0.6"/>
+                        <line x1="30" y1="35" x2="15" y2="15" stroke="#ff6b6b" stroke-width="0.4" opacity="0.4"/>
+                        <line x1="30" y1="35" x2="50" y2="10" stroke="#c084fc" stroke-width="0.4" opacity="0.4"/>
+                        <line x1="30" y1="35" x2="20" y2="55" stroke="#34d399" stroke-width="0.4" opacity="0.4"/>
+                        <line x1="70" y1="35" x2="50" y2="10" stroke="#c084fc" stroke-width="0.4" opacity="0.4"/>
+                        <line x1="70" y1="35" x2="85" y2="15" stroke="#fbbf24" stroke-width="0.4" opacity="0.4"/>
+                        <line x1="70" y1="35" x2="80" y2="55" stroke="#60a5fa" stroke-width="0.4" opacity="0.4"/>
+                    </svg>
+                    <div style="position:absolute;left:25%;top:40%;font-size:7px;color:#4fc3f7;">我</div>
+                    <div style="position:absolute;left:65%;top:40%;font-size:7px;color:#ff6b9d;">你</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t22_knowledgegraph.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>知识图谱连线</h3>
+                <div class="card-desc">力导向图、弹簧物理拖拽、所有节点连向彼此</div>
+                <div class="card-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">物理引擎</span>
+                    <span class="tag">拖拽交互</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t22_knowledgegraph.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t22_knowledgegraph.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#0a0a12;">
+                    <svg style="position:absolute;left:0;top:0;width:100%;height:100%;" viewBox="0 0 200 140">
+                        <line x1="0" y1="35" x2="200" y2="35" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+                        <line x1="0" y1="70" x2="200" y2="70" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+                        <line x1="0" y1="105" x2="200" y2="105" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+                        <line x1="50" y1="0" x2="50" y2="140" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+                        <line x1="100" y1="0" x2="100" y2="140" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+                        <line x1="150" y1="0" x2="150" y2="140" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+                        <polyline fill="none" stroke="rgba(79,195,247,0.5)" stroke-width="1" points="10,130 10,95 60,95 60,60 90,60 90,40 130,40 130,25 100,20"/>
+                        <circle cx="100" cy="20" r="3" fill="#ff6b9d" opacity="0.8"/>
+                        <circle cx="10" cy="130" r="2" fill="#4fc3f7" opacity="0.6"/>
+                    </svg>
+                    <div style="position:absolute;left:45%;top:8%;font-size:7px;color:#ff6b9d;text-shadow:0 0 4px rgba(255,107,157,0.5);">&#9679; 你的心里</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t23_cityroute.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>城市轨迹寻星</h3>
+                <div class="card-desc">暗黑地图、发光小车导航、跨越人海的派单</div>
+                <div class="card-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">导航风</span>
+                    <span class="tag">HUD面板</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t23_cityroute.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t23_cityroute.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-luxury">
+                    <div style="font-size:9px;color:#1a1a2e;letter-spacing:2px;font-weight:600;">心动医学中心</div>
+                    <div style="margin-top:12px;font-size:11px;color:#f44336;font-weight:500;">心率: 120 BPM &#9650;</div>
+                    <div style="font-size:11px;color:#ff6b9d;margin-top:4px;">多巴胺: 严重超标</div>
+                    <div style="margin-top:8px;padding:4px 8px;background:#fce4ec;border-radius:6px;font-size:9px;color:#c62828;">CRITICAL</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t24_medical.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>医疗级心跳诊断</h3>
+                <div class="card-desc">RAG诊断报告、心电图动效、签字同意治疗</div>
+                <div class="card-tags">
+                    <span class="tag">医疗UI</span>
+                    <span class="tag">Canvas心电图</span>
+                    <span class="tag">趣味报告</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t24_medical.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t24_medical.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-meteor">
+                    <div style="padding:12px;">
+                        <div style="display:flex;justify-content:space-between;font-size:8px;color:#888;margin-bottom:6px;">
+                            <span>Rank</span><span>Score</span><span>Badge</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:8px;padding:2px 0;">
+                            <span style="color:#ffd54f;font-weight:700;">1</span><span style="color:#fff;">99.97</span><span style="color:#ffd54f;">🥇</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:8px;padding:2px 0;color:#666;">
+                            <span>2</span><span>95.41</span><span style="color:#9e9e9e;">🥈</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:8px;padding:2px 0;color:#666;">
+                            <span>3</span><span>92.18</span><span style="color:#cd7f32;">🥉</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t25_leaderboard.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>Kaggle 排行榜</h3>
+                <div class="card-desc">数据竞赛榜单、金牌锁定、查看冠军代码展开告白</div>
+                <div class="card-tags">
+                    <span class="tag">榜单UI</span>
+                    <span class="tag">排名动画</span>
+                    <span class="tag">极客浪漫</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t25_leaderboard.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t25_leaderboard.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-cyber">
+                    <div class="code-line">&gt; ollama run true_love</div>
+                    <div class="code-line" style="animation-delay:0.3s">Layer 32/32 100%</div>
+                    <div class="code-line" style="animation-delay:0.6s;color:#ff6b9d">&#9829; ASCII Heart</div>
+                    <div class="code-line" style="animation-delay:0.9s;color:#ffd54f">Confidence: 99.97%</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t26_terminal.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>终端本地部署</h3>
+                <div class="card-desc">Mac终端、ollama加载模型、流式输出ASCII爱心</div>
+                <div class="card-tags">
+                    <span class="tag">终端风</span>
+                    <span class="tag">流式输出</span>
+                    <span class="tag">极客浪漫</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t26_terminal.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t26_terminal.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-luxury">
+                    <div style="font-size:8px;color:#999;letter-spacing:1px;">Our Space</div>
+                    <div style="margin-top:8px;font-size:10px;color:#37352f;font-weight:600;">&#128149; 第一次相遇</div>
+                    <div style="margin-top:6px;display:flex;flex-direction:column;gap:3px;">
+                        <div style="font-size:8px;color:#2eaadc;">&#9745; 遇见你</div>
+                        <div style="font-size:8px;color:#2eaadc;">&#9745; 第一次心动</div>
+                        <div style="font-size:8px;color:#ccc;">&#9744; 在一起</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t27_notion.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>Notion 协作空间</h3>
+                <div class="card-desc">Notion界面、侧边栏、Checkbox恋爱进度、可展开折叠</div>
+                <div class="card-tags">
+                    <span class="tag">Notion风</span>
+                    <span class="tag">侧边栏</span>
+                    <span class="tag">数字手账</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t27_notion.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t27_notion.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#000;">
+                    <div style="padding:30px 20px;text-align:center;">
+                        <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-1px;">This</div>
+                        <div style="font-size:22px;font-weight:700;background:linear-gradient(135deg,#ff6b9d,#c084fc,#4fc3f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-top:4px;">is You.</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t28_keynote.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>苹果发布会</h3>
+                <div class="card-desc">滚动视差、逐字动画、产品规格式浪漫告白</div>
+                <div class="card-tags">
+                    <span class="tag">Apple风</span>
+                    <span class="tag">滚动叙事</span>
+                    <span class="tag">大字体</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t28_keynote.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t28_keynote.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:radial-gradient(circle,#1a0a2e,#0a0a0a);">
+                    <div style="position:absolute;left:20%;top:25%;width:55%;height:35%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;backdrop-filter:blur(10px);"></div>
+                    <div style="position:absolute;left:25%;top:30%;font-size:8px;color:rgba(255,255,255,0.3);letter-spacing:1px;">LOVE **** 1314</div>
+                    <div style="position:absolute;left:25%;top:48%;font-size:6px;color:rgba(255,255,255,0.2);">无限额度</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t29_glasscard.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>玻璃拟物黑卡</h3>
+                <div class="card-desc">毛玻璃卡片、3D倾斜、流体渐变背景、光影反射</div>
+                <div class="card-tags">
+                    <span class="tag">Glassmorphism</span>
+                    <span class="tag">3D交互</span>
+                    <span class="tag">流体渐变</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t29_glasscard.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t29_glasscard.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-meteor">
+                    <div style="font-size:9px;color:#ff6b6b;position:absolute;left:80%;top:15%;animation:twinkle 1s infinite;">前方高能！</div>
+                    <div style="font-size:9px;color:#c084fc;position:absolute;left:60%;top:35%;animation:twinkle 1.5s infinite;">AWSL</div>
+                    <div style="font-size:9px;color:#ffd54f;position:absolute;left:40%;top:55%;animation:twinkle 2s infinite;">请务必在一起</div>
+                    <div style="font-size:9px;color:#ff6b9d;position:absolute;left:90%;top:75%;animation:twinkle 0.8s infinite;">太甜了吧</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t30_danmaku.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>弹幕满屏</h3>
+                <div class="card-desc">自动弹幕飘屏、手动发送、输入"我愿意"触发烟花</div>
+                <div class="card-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">弹幕系统</span>
+                    <span class="tag">烟花特效</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t30_danmaku.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t30_danmaku.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#f5f0e8;">
+                    <div style="position:absolute;left:25%;top:15%;width:50%;height:55%;background:#faf7f2;border-radius:2px;box-shadow:0 2px 8px rgba(0,0,0,0.1);display:flex;justify-content:center;align-items:center;">
+                        <div style="font-size:20px;color:#888;">&#128151;</div>
+                    </div>
+                    <div style="position:absolute;left:30%;top:78%;font-size:7px;color:#888;font-family:monospace;">显影中...</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t31_polaroid.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>宝丽来相纸冲洗</h3>
+                <div class="card-desc">暗房显影、鼠标晃动显影、进度条显示</div>
+                <div class="card-tags">
+                    <span class="tag">拟物设计</span>
+                    <span class="tag">鼠标交互</span>
+                    <span class="tag">复古暗房</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t31_polaroid.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t31_polaroid.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:linear-gradient(135deg,#1a1a3e,#2d1b4e);">
+                    <div style="position:absolute;left:15%;top:20%;width:35%;height:25%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:4px;"></div>
+                    <div style="position:absolute;left:55%;top:20%;width:30%;height:25%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:4px;"></div>
+                    <div style="position:absolute;left:25%;top:55%;width:50%;height:30%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:6px;display:flex;justify-content:center;align-items:center;">
+                        <div style="font-size:9px;color:#ff6b9d;">&#9888; 心动过速</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t32_macos.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>视窗层叠桌面</h3>
+                <div class="card-desc">MacOS桌面、多窗口、音乐播放器、系统警告弹窗</div>
+                <div class="card-tags">
+                    <span class="tag">拟物桌面</span>
+                    <span class="tag">多窗口</span>
+                    <span class="tag">趣味弹窗</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t32_macos.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t32_macos.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#0a0a14;">
+                    <div style="position:absolute;left:10%;top:30%;width:80%;height:20%;background:linear-gradient(90deg,transparent,rgba(0,255,136,0.15),rgba(0,204,255,0.1),transparent);filter:blur(8px);border-radius:50%;"></div>
+                    <div style="position:absolute;left:20%;top:40%;width:60%;height:15%;background:linear-gradient(90deg,transparent,rgba(136,85,255,0.1),rgba(0,255,204,0.08),transparent);filter:blur(8px);border-radius:50%;"></div>
+                    <div style="position:absolute;left:30%;top:70%;font-size:8px;color:rgba(255,255,255,0.3);letter-spacing:2px;">和你一起</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t33_aurora.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>极光呼吸灯</h3>
+                <div class="card-desc">极光色彩流动、呼吸光晕、星空背景、极简文案</div>
+                <div class="card-tags">
+                    <span class="tag">CSS混合模式</span>
+                    <span class="tag">极光效果</span>
+                    <span class="tag">极简</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t33_aurora.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t33_aurora.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#faf7f2;">
+                    <div style="padding:20px 10px;font-family:monospace;font-size:9px;color:#5a4a3a;line-height:14px;">
+                        <div>亲爱的你：</div>
+                        <div style="margin-top:4px;">你好。这是一封...</div>
+                        <div style="border-right:2px solid #5a4a3a;display:inline-block;height:12px;animation:twinkle 1s infinite;"></div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t34_typewriter.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>打字机与旧信笺</h3>
+                <div class="card-desc">羊皮纸纹理、逐字打字效果、光标闪烁、咖啡渍</div>
+                <div class="card-tags">
+                    <span class="tag">复古排版</span>
+                    <span class="tag">打字机音效</span>
+                    <span class="tag">情书</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t34_typewriter.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t34_typewriter.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#000;">
+                    <div style="padding:30px 15px;text-align:center;">
+                        <div style="font-size:7px;color:#555;letter-spacing:3px;">DIRECTOR</div>
+                        <div style="font-size:14px;color:#fff;font-weight:200;margin:4px 0 12px;">我</div>
+                        <div style="font-size:7px;color:#555;letter-spacing:3px;">STARRING</div>
+                        <div style="font-size:14px;color:#ff6b9d;font-weight:200;">你 &amp; 我</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t35_film_credits.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>电影片尾字幕</h3>
+                <div class="card-desc">滚动片尾字幕、演职员表格式、未完待续告白</div>
+                <div class="card-tags">
+                    <span class="tag">电影感</span>
+                    <span class="tag">滚动叙事</span>
+                    <span class="tag">Cinematic</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t35_film_credits.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t35_film_credits.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#1a1410;">
+                    <div style="position:absolute;left:20%;top:30%;width:60%;height:40%;background:radial-gradient(ellipse,rgba(255,200,100,0.2),transparent);border-radius:50%;"></div>
+                    <div style="position:absolute;left:40%;top:45%;font-size:10px;color:rgba(255,200,100,0.4);letter-spacing:2px;">沙画成形</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t36_sandart.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>沙画艺术成形</h3>
+                <div class="card-desc">粒子沙画、重力物理模拟、沙粒汇聚成字</div>
+                <div class="card-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">粒子物理</span>
+                    <span class="tag">沙画艺术</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t36_sandart.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t36_sandart.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#0d0d15;">
+                    <div style="padding:20px 15px;">
+                        <div style="font-size:8px;color:#888;letter-spacing:1px;">&#127925; PLAYLIST</div>
+                        <div style="margin-top:8px;font-size:11px;color:#ff6b9d;">01. 喜欢你</div>
+                        <div style="font-size:10px;color:#555;margin-top:3px;">02. 慢慢喜欢你</div>
+                        <div style="width:60%;height:2px;background:rgba(255,255,255,0.1);margin-top:8px;border-radius:1px;">
+                            <div style="width:40%;height:100%;background:#ff6b9d;border-radius:1px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t37_playlist.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>Spotify 歌单</h3>
+                <div class="card-desc">音乐播放器、均衡器动画、播放进度条、情歌列表</div>
+                <div class="card-tags">
+                    <span class="tag">音乐播放器</span>
+                    <span class="tag">均衡器</span>
+                    <span class="tag">CSS动画</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t37_playlist.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t37_playlist.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#e3f2fd;">
+                    <div style="padding:20px 15px;">
+                        <div style="font-size:24px;">&#9925;</div>
+                        <div style="font-size:18px;font-weight:300;color:#1a237e;margin-top:4px;">13°C</div>
+                        <div style="font-size:10px;color:#5c6bc0;margin-top:4px;">爱情预报：晴转心动</div>
+                        <div style="margin-top:8px;padding:4px 8px;background:rgba(255,107,157,0.1);border-radius:4px;font-size:8px;color:#ff6b9d;">&#9888; 恋爱预警：明日宜表白</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t38_weather.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>天气预报恋爱版</h3>
+                <div class="card-desc">天气UI、心动指数、7天恋爱预报、预警通知</div>
+                <div class="card-tags">
+                    <span class="tag">天气UI</span>
+                    <span class="tag">数据可视化</span>
+                    <span class="tag">趣味预报</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t38_weather.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t38_weather.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#fff8e1;">
+                    <div style="padding:20px 15px;">
+                        <div style="font-size:10px;color:#333;font-weight:600;">&#128722; 购物车</div>
+                        <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+                            <div style="width:30px;height:30px;background:#fce4ec;border-radius:6px;display:flex;justify-content:center;align-items:center;font-size:16px;">&#10084;</div>
+                            <div><div style="font-size:10px;color:#333;">你</div><div style="font-size:8px;color:#999;">无价之宝</div></div>
+                        </div>
+                        <div style="margin-top:8px;font-size:8px;color:#ff6b9d;font-weight:600;">合计：∞</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t39_shoppingcart.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>淘宝购物车</h3>
+                <div class="card-desc">购物车UI、唯一商品"你"、无价之宝、结算告白</div>
+                <div class="card-tags">
+                    <span class="tag">电商UI</span>
+                    <span class="tag">趣味文案</span>
+                    <span class="tag">结算动画</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t39_shoppingcart.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t39_shoppingcart.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#0d1117;">
+                    <svg style="position:absolute;left:5%;top:15%;width:90%;height:65%;" viewBox="0 0 100 60">
+                        <polyline fill="none" stroke="#4caf50" stroke-width="0.8" points="0,55 5,52 10,50 15,48 20,47 25,45 30,44 35,42 40,40 45,38 50,35 55,32 60,28 65,25 70,22 75,18 80,15 85,12 90,10 95,8 100,5"/>
+                        <text x="2" y="58" fill="#888" font-size="4">LOVE.520</text>
+                    </svg>
+                    <div style="position:absolute;left:70%;top:20%;font-size:8px;color:#4caf50;">+520%</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t40_stock.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>K线股票图</h3>
+                <div class="card-desc">股票看板、LOVE.520持续涨停、买入告白</div>
+                <div class="card-tags">
+                    <span class="tag">金融UI</span>
+                    <span class="tag">Canvas图表</span>
+                    <span class="tag">涨停动画</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t40_stock.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t40_stock.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#0a0a0a;">
+                    <div style="text-align:center;padding-top:50px;">
+                        <div style="font-size:36px;font-weight:700;color:#ff6b9d;font-family:monospace;">00:30</div>
+                        <div style="font-size:8px;color:#555;margin-top:8px;letter-spacing:2px;">倒计时结束告白</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t41_countdown.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>30秒倒计时</h3>
+                <div class="card-desc">倒计时定时器、秒数跳动、归零后告白</div>
+                <div class="card-tags">
+                    <span class="tag">倒计时</span>
+                    <span class="tag">紧张感</span>
+                    <span class="tag">告白揭晓</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t41_countdown.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t41_countdown.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-meteor">
+                    <div class="star" style="left:20%;top:20%;width:4px;height:4px;"></div>
+                    <div class="star" style="left:60%;top:30%;width:3px;height:3px;animation-delay:0.5s;"></div>
+                    <div class="star" style="left:40%;top:50%;width:4px;height:4px;animation-delay:1s;"></div>
+                    <div class="star" style="left:70%;top:60%;width:3px;height:3px;animation-delay:1.5s;"></div>
+                    <div style="position:absolute;left:45%;top:35%;font-size:8px;color:rgba(255,255,255,0.2);">点击连线</div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t42_constellation_heart.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>星空连线成心</h3>
+                <div class="card-desc">点击星体、自动连线、心形轮廓成形</div>
+                <div class="card-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">点击交互</span>
+                    <span class="tag">星座风</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t42_constellation_heart.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t42_constellation_heart.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#fff;">
+                    <div style="padding:15px;">
+                        <div style="font-size:10px;color:#ff6b9d;font-weight:600;">2026年 本月</div>
+                        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:8px;text-align:center;">
+                            <div style="font-size:6px;color:#888;">一</div><div style="font-size:6px;color:#888;">二</div><div style="font-size:6px;color:#888;">三</div><div style="font-size:6px;color:#888;">四</div><div style="font-size:6px;color:#888;">五</div><div style="font-size:6px;color:#888;">六</div><div style="font-size:6px;color:#888;">日</div>
+                        </div>
+                        <div style="margin-top:6px;font-size:8px;color:#ff6b9d;">&#9825; 想你 · 见你 · 爱你</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t43_calendar.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>日历日程</h3>
+                <div class="card-desc">月历视图、爱心标记、永久日程"爱你"</div>
+                <div class="card-tags">
+                    <span class="tag">日历UI</span>
+                    <span class="tag">日程管理</span>
+                    <span class="tag">趣味标记</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t43_calendar.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t43_calendar.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#0d0d15;">
+                    <div style="padding:15px;">
+                        <div style="max-width:70%;padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:12px;font-size:8px;color:#fff;">在吗？</div>
+                        <div style="max-width:70%;padding:6px 10px;background:linear-gradient(135deg,#ff6b9d,#c084fc);border-radius:12px;font-size:8px;color:#fff;margin-left:auto;margin-top:4px;">想你了</div>
+                        <div style="font-size:7px;color:#4caf50;margin-top:4px;">正在输入中...</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t44_chat.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>聊天对话框</h3>
+                <div class="card-desc">自动消息播放、自定义输入、气泡动画</div>
+                <div class="card-tags">
+                    <span class="tag">聊天UI</span>
+                    <span class="tag">自动播放</span>
+                    <span class="tag">消息气泡</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t44_chat.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t44_chat.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner preview-meteor">
+                    <div style="text-align:center;padding-top:40px;">
+                        <div style="font-size:24px;">&#128274;</div>
+                        <div style="display:flex;gap:10px;justify-content:center;margin-top:15px;">
+                            <div style="width:10px;height:10px;border-radius:50%;background:#ff6b9d;border:2px solid #ff6b9d;"></div>
+                            <div style="width:10px;height:10px;border-radius:50%;background:#ff6b9d;border:2px solid #ff6b9d;"></div>
+                            <div style="width:10px;height:10px;border-radius:50%;border:2px solid #555;"></div>
+                        </div>
+                        <div style="margin-top:10px;font-size:8px;color:#555;">提示：特别的日子</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t45_password.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>密码解锁告白</h3>
+                <div class="card-desc">PIN密码锁、数字键盘、正确后揭晓告白</div>
+                <div class="card-tags">
+                    <span class="tag">密码锁</span>
+                    <span class="tag">键盘交互</span>
+                    <span class="tag">解锁动画</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t45_password.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t45_password.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#000;">
+                    <div style="text-align:center;padding-top:30px;">
+                        <div style="font-size:20px;">&#128240;</div>
+                        <div style="font-size:12px;font-weight:300;margin-top:8px;">系统更新</div>
+                        <div style="font-size:8px;color:#555;margin-top:4px;">LoveOS 5.2.0</div>
+                        <div style="width:60%;height:3px;background:rgba(255,255,255,0.1);margin:12px auto 0;border-radius:2px;">
+                            <div style="width:0%;height:100%;background:#fff;border-radius:2px;" id="demo-progress"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t46_update.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>系统更新 LoveOS</h3>
+                <div class="card-desc">系统更新界面、进度条、新版本"永久陪伴"</div>
+                <div class="card-tags">
+                    <span class="tag">系统UI</span>
+                    <span class="tag">进度动画</span>
+                    <span class="tag">趣味更新</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t46_update.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t46_update.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#1a0a2e;">
+                    <div style="text-align:center;padding-top:30px;">
+                        <div style="font-size:20px;">&#127775;</div>
+                        <div style="font-size:10px;font-weight:300;margin-top:6px;letter-spacing:3px;">今日运势</div>
+                        <div style="margin-top:10px;padding:6px 12px;background:rgba(255,107,157,0.1);border-radius:8px;display:inline-block;">
+                            <div style="font-size:16px;font-weight:700;color:#ff6b9d;">99</div>
+                            <div style="font-size:7px;color:#888;">爱情指数</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t47_fortune.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>每日运势</h3>
+                <div class="card-desc">星座运势、爱情指数99、今日宜忌、幸运物</div>
+                <div class="card-tags">
+                    <span class="tag">运势风</span>
+                    <span class="tag">星座UI</span>
+                    <span class="tag">每日更新</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t47_fortune.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t47_fortune.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#0a0a1a;">
+                    <div style="text-align:center;padding-top:30px;">
+                        <div style="font-size:10px;letter-spacing:3px;margin-bottom:15px;">心灵感应测试</div>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100px;margin:0 auto;">
+                            <div style="width:30px;height:30px;background:rgba(255,255,255,0.03);border-radius:6px;display:flex;justify-content:center;align-items:center;font-size:16px;">&#127775;</div>
+                            <div style="width:30px;height:30px;background:rgba(255,255,255,0.03);border-radius:6px;display:flex;justify-content:center;align-items:center;font-size:16px;">&#127752;</div>
+                            <div style="width:30px;height:30px;background:rgba(255,255,255,0.03);border-radius:6px;display:flex;justify-content:center;align-items:center;font-size:16px;">&#127774;</div>
+                        </div>
+                        <div style="font-size:7px;color:#555;margin-top:10px;">选一个表情</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t48_telepathy.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>心灵感应测试</h3>
+                <div class="card-desc">表情选择、不同结果相同答案、心灵感应确认</div>
+                <div class="card-tags">
+                    <span class="tag">测试风</span>
+                    <span class="tag">选择交互</span>
+                    <span class="tag">惊喜统一</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t48_telepathy.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t48_telepathy.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#0a0a0a;">
+                    <div style="text-align:center;padding-top:30px;">
+                        <div style="font-size:24px;animation:twinkle 1s infinite;">&#10084;</div>
+                        <div style="font-size:28px;font-weight:700;color:#ff6b9d;margin-top:8px;">99<span style="font-size:10px;color:#555;"> BPM</span></div>
+                        <div style="font-size:7px;color:#4caf50;margin-top:4px;">&#9679; 监测中</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t49_heartbeat.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>心跳监测仪</h3>
+                <div class="card-desc">心电图Canvas、BPM实时显示、诊断结果告白</div>
+                <div class="card-tags">
+                    <span class="tag">医疗UI</span>
+                    <span class="tag">Canvas心电图</span>
+                    <span class="tag">实时数据</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t49_heartbeat.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t49_heartbeat.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="card-preview">
+                <div class="preview-inner" style="background:#1a1a1a;">
+                    <div style="padding:15px;">
+                        <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:15px;">
+                            <div style="font-size:10px;">&#128269;</div>
+                            <div style="font-size:8px;color:#555;">搜索...</div>
+                        </div>
+                        <div style="margin-top:8px;font-size:8px;color:#888;">&#128196; 怎么跟喜欢的人表白</div>
+                        <div style="font-size:8px;color:#ff6b9d;margin-top:3px;">&#128150; ta 喜欢什么颜色</div>
+                    </div>
+                </div>
+                <div class="preview-overlay">
+                    <a href="t50_search.html" class="preview-btn" target="_blank">&#9654; 预览</a>
+                </div>
+            </div>
+            <div class="card-info">
+                <h3>搜索记录</h3>
+                <div class="card-desc">搜索引擎历史、所有搜索指向同一个人</div>
+                <div class="card-tags">
+                    <span class="tag">搜索UI</span>
+                    <span class="tag">历史记录</span>
+                    <span class="tag">叙事文案</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-preview" onclick="window.open('t50_search.html')">&#9654; 在线预览</button>
+                    <button class="btn-copy" onclick="copyCode('t50_search.html')">&#128203; 复制代码</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">代码已复制到剪贴板！</div>
+
+    <script>
+        async function copyCode(filename) {
+            try {
+                const response = await fetch(filename);
+                const text = await response.text();
+                await navigator.clipboard.writeText(text);
+                showToast();
+            } catch (err) {
+                try {
+                    const response = await fetch(filename);
+                    const text = await response.text();
+                    const ta = document.createElement('textarea');
+                    ta.value = text; document.body.appendChild(ta);
+                    ta.select(); document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    showToast();
+                } catch (e2) {
+                    showToast('复制失败，请手动打开文件复制');
+                }
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            if (msg) toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+    </script>
+</body>
+</html>

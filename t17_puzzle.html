@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼图告白</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            font-family: 'PingFang SC', 'Helvetica Neue', sans-serif;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; }
+
+        .puzzle-title {
+            font-size: clamp(18px, 4vw, 28px); color: rgba(255,255,255,0.7);
+            letter-spacing: 4px; margin-bottom: 8px;
+        }
+        .puzzle-hint {
+            font-size: 13px; color: rgba(255,255,255,0.3);
+            letter-spacing: 2px; margin-bottom: 30px;
+        }
+
+        .puzzle-board {
+            position: relative;
+            width: min(360px, 80vw); height: min(360px, 80vw);
+        }
+
+        .puzzle-slot {
+            position: absolute; width: 33.33%; height: 33.33%;
+            border: 2px dashed rgba(255,255,255,0.15); border-radius: 4px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; color: rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+        .puzzle-slot.highlight { border-color: rgba(255,107,157,0.5); background: rgba(255,107,157,0.05); }
+        .puzzle-slot.filled { border: none; background: transparent; }
+
+        .puzzle-piece {
+            position: fixed; width: min(100px, 22vw); height: min(100px, 22vw);
+            border-radius: 8px; cursor: grab;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            font-size: clamp(12px, 3vw, 16px);
+            color: #fff; font-weight: 700; letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s;
+            user-select: none; z-index: 10; touch-action: none;
+        }
+        .puzzle-piece:hover { transform: scale(1.05); }
+        .puzzle-piece.placed {
+            position: absolute; cursor: default;
+            width: 100% !important; height: 100% !important;
+            border-radius: 4px; box-shadow: none;
+        }
+        .puzzle-piece.dragging { transform: scale(1.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 20; }
+
+        .result-overlay {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(0,0,0,0.85);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 1s ease;
+        }
+        .result-overlay.visible { opacity: 1; pointer-events: auto; }
+
+        .result-message { text-align: center; transform: scale(0.8); transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .result-overlay.visible .result-message { transform: scale(1); }
+        .result-emoji { font-size: 60px; margin-bottom: 20px; }
+        .result-text {
+            font-size: clamp(24px, 6vw, 40px); color: #ff6b9d;
+            letter-spacing: 6px; margin-bottom: 16px;
+        }
+        .result-sub {
+            font-size: clamp(14px, 3vw, 18px); color: rgba(255,255,255,0.5);
+            letter-spacing: 3px;
+        }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div class="puzzle-title">拼图告白</div>
+    <div class="puzzle-hint">拖拽碎片，拼出我的心意</div>
+
+    <div class="puzzle-board" id="board"></div>
+
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-message">
+            <div class="result-emoji">&#10084;</div>
+            <div class="result-text">拼图完成</div>
+            <div class="result-sub">你拼出了我的心</div>
+        </div>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const resultOverlay = document.getElementById('resultOverlay');
+        const GRID = 3;
+        let placedCount = 0;
+
+        const pieceData = [
+            { row:0, col:0, text:'我', bg:'linear-gradient(135deg,#ff6b9d,#c084fc)' },
+            { row:0, col:1, text:'喜', bg:'linear-gradient(135deg,#c084fc,#60a5fa)' },
+            { row:0, col:2, text:'欢', bg:'linear-gradient(135deg,#60a5fa,#34d399)' },
+            { row:1, col:0, text:'你', bg:'linear-gradient(135deg,#34d399,#fbbf24)' },
+            { row:1, col:1, text:'♥', bg:'linear-gradient(135deg,#fbbf24,#ff6b9d)' },
+            { row:1, col:2, text:'每', bg:'linear-gradient(135deg,#f472b6,#a78bfa)' },
+            { row:2, col:0, text:'一', bg:'linear-gradient(135deg,#a78bfa,#60a5fa)' },
+            { row:2, col:1, text:'天', bg:'linear-gradient(135deg,#60a5fa,#34d399)' },
+            { row:2, col:2, text:'!', bg:'linear-gradient(135deg,#34d399,#fbbf24)' },
+        ];
+
+        for (let r = 0; r < GRID; r++) {
+            for (let c = 0; c < GRID; c++) {
+                const slot = document.createElement('div');
+                slot.className = 'puzzle-slot';
+                slot.dataset.row = r; slot.dataset.col = c;
+                slot.style.left = (c/GRID*100)+'%'; slot.style.top = (r/GRID*100)+'%';
+                board.appendChild(slot);
+            }
+        }
+
+        const shuffled = [...pieceData].sort(() => Math.random() - 0.5);
+        const pieces = [];
+
+        shuffled.forEach((data) => {
+            const piece = document.createElement('div');
+            piece.className = 'puzzle-piece';
+            piece.textContent = data.text;
+            piece.style.background = data.bg;
+            piece.dataset.row = data.row; piece.dataset.col = data.col;
+            pieces.push(piece);
+            document.body.appendChild(piece);
+        });
+
+        function scatterPieces() {
+            const vw = window.innerWidth, vh = window.innerHeight;
+            const pw = Math.min(100, vw * 0.22), ph = pw;
+            pieces.forEach((piece, i) => {
+                const angle = (Math.PI*2*i)/pieces.length;
+                const dist = Math.min(vw, vh) * 0.35;
+                piece.style.left = (vw/2 + Math.cos(angle)*dist - pw/2) + 'px';
+                piece.style.top = (vh/2 + Math.sin(angle)*dist - ph/2) + 'px';
+                piece.style.width = pw+'px'; piece.style.height = ph+'px';
+                piece.style.transform = `rotate(${(Math.random()-0.5)*20}deg)`;
+            });
+        }
+        scatterPieces();
+        window.addEventListener('resize', scatterPieces);
+
+        pieces.forEach(piece => {
+            let dragging = false, startX, startY, origX, origY;
+
+            piece.addEventListener('mousedown', startDrag);
+            piece.addEventListener('touchstart', startDrag, { passive: false });
+
+            function startDrag(e) {
+                e.preventDefault();
+                if (piece.classList.contains('placed')) return;
+                dragging = true;
+                piece.classList.add('dragging');
+                const pos = e.touches ? e.touches[0] : e;
+                startX = pos.clientX; startY = pos.clientY;
+                origX = parseFloat(piece.style.left); origY = parseFloat(piece.style.top);
+                document.addEventListener('mousemove', onDrag);
+                document.addEventListener('touchmove', onDrag, { passive: false });
+                document.addEventListener('mouseup', endDrag);
+                document.addEventListener('touchend', endDrag);
+            }
+
+            function onDrag(e) {
+                if (!dragging) return;
+                e.preventDefault();
+                const pos = e.touches ? e.touches[0] : e;
+                piece.style.left = (origX + pos.clientX - startX) + 'px';
+                piece.style.top = (origY + pos.clientY - startY) + 'px';
+                document.querySelectorAll('.puzzle-slot:not(.filled)').forEach(s => s.classList.remove('highlight'));
+                const nearest = findNearestSlot(piece);
+                if (nearest) nearest.slot.classList.add('highlight');
+            }
+
+            function endDrag() {
+                if (!dragging) return;
+                dragging = false;
+                piece.classList.remove('dragging');
+                const nearest = findNearestSlot(piece);
+                if (nearest && nearest.row === parseInt(piece.dataset.row) && nearest.col === parseInt(piece.dataset.col)) {
+                    placePiece(piece, nearest.slot);
+                } else {
+                    piece.style.left = origX + 'px';
+                    piece.style.top = origY + 'px';
+                }
+                document.querySelectorAll('.puzzle-slot').forEach(s => s.classList.remove('highlight'));
+                document.removeEventListener('mousemove', onDrag);
+                document.removeEventListener('touchmove', onDrag);
+                document.removeEventListener('mouseup', endDrag);
+                document.removeEventListener('touchend', endDrag);
+            }
+        });
+
+        function findNearestSlot(piece) {
+            const pRect = piece.getBoundingClientRect();
+            const pcx = pRect.left + pRect.width/2, pcy = pRect.top + pRect.height/2;
+            let closest = null, minDist = Infinity;
+            document.querySelectorAll('.puzzle-slot:not(.filled)').forEach(slot => {
+                const sRect = slot.getBoundingClientRect();
+                const scx = sRect.left + sRect.width/2, scy = sRect.top + sRect.height/2;
+                const dist = Math.hypot(pcx-scx, pcy-scy);
+                if (dist < pRect.width*0.8 && dist < minDist) { minDist = dist; closest = slot; }
+            });
+            if (closest) return { row: +closest.dataset.row, col: +closest.dataset.col, slot: closest };
+            return null;
+        }
+
+        function placePiece(piece, slot) {
+            piece.classList.add('placed');
+            slot.classList.add('filled');
+            piece.style.position = 'absolute';
+            piece.style.left = slot.style.left;
+            piece.style.top = slot.style.top;
+            piece.style.width = slot.style.width;
+            piece.style.height = slot.style.height;
+            piece.style.transform = 'none';
+            slot.appendChild(piece);
+            placedCount++;
+            if (placedCount === GRID*GRID) setTimeout(() => resultOverlay.classList.add('visible'), 800);
+        }
+
+        resultOverlay.addEventListener('click', (e) => {
+            if (e.target === resultOverlay) resultOverlay.classList.remove('visible');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>心灵感应测试</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a1a; font-family: -apple-system, 'PingFang SC', sans-serif; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .test-screen { text-align: center; max-width: 350px; padding: 20px; }
+        .test-title { font-size: 18px; font-weight: 300; letter-spacing: 3px; margin-bottom: 8px; }
+        .test-subtitle { font-size: 11px; color: #666; margin-bottom: 30px; }
+        .emoji-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+        .emoji-btn { width: 80px; height: 80px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); font-size: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+        .emoji-btn:active { transform: scale(0.9); background: rgba(255,107,157,0.1); border-color: rgba(255,107,157,0.3); }
+        .emoji-btn.selected { background: rgba(255,107,157,0.15); border-color: rgba(255,107,157,0.4); box-shadow: 0 0 20px rgba(255,107,157,0.2); }
+        .result-text { font-size: 14px; color: #888; min-height: 40px; transition: all 0.5s ease; }
+        .result-text.show { color: #ff6b9d; }
+        .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at center, rgba(20,10,30,0.97), rgba(0,0,0,0.99)); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 1.5s ease; }
+        .overlay.visible { opacity: 1; pointer-events: auto; }
+        .overlay-text { font-size: clamp(18px, 4vw, 28px); color: #fff; letter-spacing: 4px; text-align: center; opacity: 0; animation: rise 1.5s ease 0.5s forwards; }
+        .overlay-text .pink { color: #ff6b9d; }
+        .overlay-sub { font-size: 11px; color: #555; letter-spacing: 3px; margin-top: 14px; opacity: 0; animation: rise 1.5s ease 1.5s forwards; }
+        @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="test-screen">
+        <div class="test-title">心灵感应测试</div>
+        <div class="test-subtitle">选一个你此刻最想看到的表情</div>
+        <div class="emoji-grid" id="emoji-grid">
+            <button class="emoji-btn" data-idx="0">&#127775;</button>
+            <button class="emoji-btn" data-idx="1">&#127752;</button>
+            <button class="emoji-btn" data-idx="2">&#127774;</button>
+            <button class="emoji-btn" data-idx="3">&#9728;</button>
+            <button class="emoji-btn" data-idx="4">&#127754;</button>
+            <button class="emoji-btn" data-idx="5">&#127776;</button>
+        </div>
+        <div class="result-text" id="result"></div>
+    </div>
+    <div class="overlay" id="overlay">
+        <div class="overlay-text">无论选哪个<br><span class="pink">答案都是喜欢你</span></div>
+        <div class="overlay-sub">TELEPATHY CONFIRMED — SAME ANSWER</div>
+    </div>
+    <script>
+        var msgs = [
+            '星星说：你们之间有缘分',
+            '月亮说：今晚适合表白',
+            '太阳说：热情会被回应',
+            '云朵说：思念正在传递',
+            '雨滴说：心事已被察觉',
+            '彩虹说：美好即将发生'
+        ];
+        var grid = document.getElementById('emoji-grid'), result = document.getElementById('result');
+        grid.addEventListener('click', function(e) {
+            var btn = e.target.closest('.emoji-btn'); if (!btn) return;
+            grid.querySelectorAll('.emoji-btn').forEach(function(b) { b.classList.remove('selected'); });
+            btn.classList.add('selected');
+            result.textContent = msgs[parseInt(btn.getAttribute('data-idx'))];
+            result.classList.add('show');
+            setTimeout(function() { document.getElementById('overlay').classList.add('visible'); }, 2000);
+        });
+    </script>
+</body>
+</html>

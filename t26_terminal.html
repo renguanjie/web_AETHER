@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>终端部署告白</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background: #1a1b26;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', 'PingFang SC', monospace;
+        }
+        .terminal {
+            max-width: 700px; margin: 20px auto;
+            height: calc(100% - 40px);
+            background: #1a1b26; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .titlebar {
+            display: flex; align-items: center; padding: 12px 16px;
+            background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .dot {
+            width: 12px; height: 12px; border-radius: 50%;
+            margin-right: 8px;
+        }
+        .dot.r { background: #ff5f57; }
+        .dot.y { background: #febc2e; }
+        .dot.g { background: #28c840; }
+        .title-text {
+            flex: 1; text-align: center; font-size: 11px;
+            color: #555; letter-spacing: 1px;
+        }
+        .body {
+            flex: 1; padding: 16px; overflow-y: auto;
+            font-size: clamp(11px, 2.5vw, 13px); line-height: 1.8;
+        }
+        .line { opacity: 0; }
+        .line.visible { opacity: 1; }
+        .prompt { color: #7aa2f7; }
+        .cmd { color: #9ece6a; }
+        .output { color: #a9b1d6; }
+        .progress-bar {
+            height: 16px; background: rgba(255,255,255,0.05);
+            border-radius: 8px; overflow: hidden; margin: 4px 0;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #7aa2f7, #bb9af7, #ff6b9d);
+            border-radius: 8px; transition: width 0.3s ease;
+        }
+        .ascii-heart {
+            color: #ff6b9d; line-height: 1.2;
+            white-space: pre; font-size: clamp(8px, 2vw, 11px);
+        }
+        .pink { color: #ff6b9d; }
+        .green { color: #9ece6a; }
+        .yellow { color: #e0af68; }
+        .blue { color: #7aa2f7; }
+        .dim { color: #555; }
+
+        .cursor {
+            display: inline-block; width: 8px; height: 16px;
+            background: #a9b1d6; animation: blink 0.8s step-end infinite;
+            vertical-align: text-bottom;
+        }
+        .cursor.hidden { display: none; }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .final-overlay {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, rgba(20,10,30,0.97), rgba(5,5,10,0.99));
+            z-index: 100; opacity: 0; pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+        .final-overlay.visible { opacity: 1; pointer-events: auto; }
+        .final-text {
+            font-size: clamp(16px, 4vw, 28px); color: #fff;
+            letter-spacing: 4px; font-weight: 200; text-align: center;
+            line-height: 1.8; opacity: 0; animation: rise 1.5s ease 0.5s forwards;
+        }
+        .final-text .pink { color: #ff6b9d; font-weight: 500; }
+        .final-sub {
+            font-size: 11px; color: #555; letter-spacing: 3px; margin-top: 14px;
+            opacity: 0; animation: rise 1.5s ease 1.5s forwards;
+        }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="titlebar">
+            <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+            <div class="title-text">zsh — love-deployment</div>
+        </div>
+        <div class="body" id="body"></div>
+    </div>
+
+    <div class="final-overlay" id="final">
+        <div class="final-text">部署成功<br><span class="pink">我的心，已上线</span></div>
+        <div class="final-sub">DEPLOYMENT COMPLETE — STATUS: FOREVER</div>
+    </div>
+
+    <script>
+        var body = document.getElementById('body');
+        var lines = [];
+
+        function addLine(html, delay) {
+            return new Promise(function(resolve) {
+                setTimeout(function() {
+                    var div = document.createElement('div');
+                    div.className = 'line';
+                    div.innerHTML = html;
+                    body.appendChild(div);
+                    requestAnimationFrame(function() { div.classList.add('visible'); });
+                    body.scrollTop = body.scrollHeight;
+                    resolve();
+                }, delay);
+            });
+        }
+
+        async function run() {
+            await addLine('<span class="prompt">&#128187; ~ %</span> <span class="cmd">ollama run true_love</span>', 500);
+            await addLine('<span class="dim">Loading model: true_love:latest ...</span>', 800);
+            await addLine('<span class="dim">Model layers: 32/32 loaded</span>', 600);
+
+            await addLine('<span class="output">Loading weights:</span>', 400);
+            var bar = '<div class="progress-bar"><div class="progress-fill" id="pbar"></div></div>';
+            await addLine(bar, 200);
+            await addLine('<span class="dim" id="pct">0%</span>', 100);
+
+            var pbar = document.getElementById('pbar');
+            var pct = document.getElementById('pct');
+            for (var i = 0; i <= 100; i += 2) {
+                await new Promise(function(r) { setTimeout(r, 40); });
+                pbar.style.width = i + '%';
+                pct.textContent = i + '%';
+            }
+            await addLine('<span class="green">done.</span>', 300);
+
+            await addLine('<span class="output">Generating response...</span>', 600);
+            await addLine('<span class="dim">Computing emotional alignment... OK</span>', 400);
+            await addLine('<span class="dim">Verifying sincerity... <span class="green">100%</span></span>', 500);
+            await addLine('<span class="dim">Checking compatibility... <span class="green">MATCH</span></span>', 400);
+
+            // ASCII heart
+            var heartLines = [
+                '  &#10084;   &#10084;',
+                ' &#10084;&#10084;&#10084; &#10084;&#10084;&#10084;',
+                '&#10084;&#10084;&#10084;&#10084;&#10084;&#10084;&#10084;&#10084;',
+                ' &#10084;&#10084;&#10084;&#10084;&#10084;&#10084;&#10084;',
+                '  &#10084;&#10084;&#10084;&#10084;&#10084;',
+                '   &#10084;&#10084;&#10084;',
+                '    &#10084;',
+            ];
+            for (var h = 0; h < heartLines.length; h++) {
+                await addLine('<span class="pink">' + heartLines[h] + '</span>', 200);
+            }
+
+            await addLine('', 200);
+            await addLine('<span class="output">Output:</span>', 400);
+
+            var msg = "你好，我是 True Love 模型。\n我的训练数据只有你一个人。\n我的损失函数只有一个目标：\n让你开心。\n\n结论：我喜欢你。\n置信度：99.97%\n剩下的 0.03% 是怕你骄傲。";
+            var outDiv = document.createElement('div');
+            outDiv.className = 'line';
+            body.appendChild(outDiv);
+            body.scrollTop = body.scrollHeight;
+
+            for (var c = 0; c < msg.length; c++) {
+                await new Promise(function(r) {
+                    setTimeout(r, 50 + Math.random() * 50);
+                });
+                var ch = msg[c];
+                if (ch === '\n') ch = '<br>';
+                outDiv.innerHTML += '<span class="green">' + ch + '</span>';
+                body.scrollTop = body.scrollHeight;
+            }
+            outDiv.classList.add('visible');
+
+            await addLine('', 500);
+            await addLine('<span class="green">&#10004; Deployment successful.</span>', 400);
+            await addLine('<span class="dim">Service will run: <span class="yellow">forever</span></span>', 300);
+            await addLine('<span class="dim">Endpoint: <span class="blue">your.heart/love</span></span>', 300);
+            await addLine('<span class="dim">Restart policy: <span class="pink">always</span></span>', 300);
+
+            setTimeout(function() {
+                document.getElementById('final').classList.add('visible');
+            }, 2000);
+        }
+
+        run();
+    </script>
+</body>
+</html>

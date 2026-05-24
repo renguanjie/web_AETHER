@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星空下的告白</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(to bottom, #0a051b, #020107);
+            min-height: 100vh; overflow: hidden;
+            font-family: 'PingFang SC', 'Microsoft YaHei', serif;
+            color: #fff;
+        }
+        canvas { position: fixed; top: 0; left: 0; z-index: 0; }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: #D4AF37; text-decoration: none; font-size: 14px;
+            padding: 8px 16px; border: 1px solid rgba(212,175,55,0.3);
+            border-radius: 20px; backdrop-filter: blur(8px);
+            transition: all 0.3s;
+        }
+        .back-btn:hover { background: rgba(212,175,55,0.15); }
+
+        #phase1 {
+            position: fixed; inset: 0; z-index: 10;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+        .typewriter-text {
+            font-size: clamp(16px, 4vw, 28px);
+            text-align: center; max-width: 80vw;
+            line-height: 1.8; letter-spacing: 2px;
+            color: rgba(255,255,255,0.9);
+            text-shadow: 0 0 20px rgba(212,175,55,0.3);
+            min-height: 120px;
+        }
+        .cursor { display: inline-block; width: 2px; height: 1.2em;
+            background: #D4AF37; margin-left: 4px;
+            animation: blink 0.8s infinite; vertical-align: text-bottom;
+        }
+        @keyframes blink { 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
+
+        .btn-glow {
+            margin-top: 40px; padding: 14px 40px;
+            background: transparent; color: #fff;
+            border: 1px solid rgba(255,200,230,0.6);
+            border-radius: 50px; font-size: 16px;
+            cursor: pointer; opacity: 0;
+            transition: all 0.6s ease;
+            box-shadow: 0 0 15px rgba(255,200,230,0.15),
+                        inset 0 0 15px rgba(255,200,230,0.05);
+            letter-spacing: 3px;
+        }
+        .btn-glow.show { opacity: 1; }
+        .btn-glow:hover {
+            background: rgba(255,200,230,0.1);
+            box-shadow: 0 0 30px rgba(255,200,230,0.3);
+            transform: scale(1.05);
+        }
+
+        #phase2 {
+            position: fixed; inset: 0; z-index: 20;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 1s ease;
+        }
+        #phase2.active { opacity: 1; pointer-events: auto; }
+
+        .heart-card {
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,200,230,0.2);
+            border-radius: 24px; padding: 50px 40px;
+            max-width: 520px; width: 90vw;
+            text-align: center;
+            transform: scale(0.8); opacity: 0;
+            transition: all 0.8s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        #phase2.active .heart-card { transform: scale(1); opacity: 1; }
+
+        .heart-icon { font-size: 60px; margin-bottom: 20px;
+            animation: heartPulse 1.2s infinite; }
+        @keyframes heartPulse {
+            0%,100%{ transform: scale(1); }
+            50%{ transform: scale(1.15); }
+        }
+
+        .card-title {
+            font-size: clamp(22px, 5vw, 32px);
+            font-weight: 300; letter-spacing: 4px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffcce6, #D4AF37, #ff88bb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .card-body {
+            font-size: clamp(14px, 3vw, 18px);
+            line-height: 2; color: rgba(255,255,255,0.85);
+            letter-spacing: 1px; margin-bottom: 35px;
+        }
+
+        .btn-accept {
+            padding: 14px 50px; border: none; border-radius: 50px;
+            background: linear-gradient(135deg, #ff6b9d, #c44dff);
+            color: #fff; font-size: 18px; cursor: pointer;
+            letter-spacing: 4px; transition: all 0.3s;
+            box-shadow: 0 4px 25px rgba(255,107,157,0.4);
+        }
+        .btn-accept:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 35px rgba(255,107,157,0.6);
+        }
+
+        #heartCanvas { position: fixed; inset: 0; z-index: 30;
+            pointer-events: none; opacity: 0; transition: opacity 0.5s; }
+        #heartCanvas.active { opacity: 1; }
+    </style>
+</head>
+<body>
+    <canvas id="mainCanvas"></canvas>
+    <canvas id="heartCanvas"></canvas>
+
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div id="phase1">
+        <div class="typewriter-text">
+            <span id="twText"></span><span class="cursor"></span>
+        </div>
+        <button class="btn-glow" id="btnOpen">点击开启我们的星河</button>
+    </div>
+
+    <div id="phase2">
+        <div class="heart-card">
+            <div class="heart-icon">&#10084;</div>
+            <div class="card-title">致最珍贵的你</div>
+            <div class="card-body">
+                在浩瀚的宇宙中<br>
+                星辰为你引路<br>
+                而我，愿化作那道最温柔的光<br><br>
+                每一次心跳，都是对你的思念<br>
+                每一刻等待，都是爱的证明<br><br>
+                你愿意，和我一直走下去吗？
+            </div>
+            <button class="btn-accept" id="btnAccept">愿意 &#10084;</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const hCanvas = document.getElementById('heartCanvas');
+        const hCtx = hCanvas.getContext('2d');
+
+        let W, H;
+        const isMobile = window.innerWidth < 768;
+        const starCount = isMobile ? 120 : 300;
+        const meteorCount = isMobile ? 3 : 8;
+
+        function resize() {
+            W = canvas.width = hCanvas.width = window.innerWidth;
+            H = canvas.height = hCanvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        const stars = [];
+        for (let i = 0; i < starCount; i++) {
+            stars.push({
+                x: Math.random() * W, y: Math.random() * H,
+                r: Math.random() * 1.5 + 0.5,
+                baseOp: Math.random() * 0.5 + 0.3,
+                speed: Math.random() * 0.02 + 0.005,
+                phase: Math.random() * Math.PI * 2
+            });
+        }
+
+        const meteors = [];
+        function spawnMeteor() {
+            meteors.push({
+                x: Math.random() * W * 0.8 + W * 0.1,
+                y: -20,
+                vx: -(Math.random() * 4 + 3),
+                vy: Math.random() * 6 + 5,
+                len: Math.random() * 80 + 60,
+                op: 1, life: 1
+            });
+        }
+
+        function drawStars(t) {
+            for (const s of stars) {
+                const twinkle = Math.sin(t * s.speed + s.phase) * 0.3 + 0.7;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255,255,255,${s.baseOp * twinkle})`;
+                ctx.fill();
+            }
+        }
+
+        function drawMeteors() {
+            for (let i = meteors.length - 1; i >= 0; i--) {
+                const m = meteors[i];
+                m.x += m.vx; m.y += m.vy;
+                m.life -= 0.012; m.op = m.life;
+                if (m.life <= 0) { meteors.splice(i, 1); continue; }
+
+                const dist = Math.sqrt(m.vx*m.vx+m.vy*m.vy);
+                const tailX = m.x - m.vx * m.len / dist;
+                const tailY = m.y - m.vy * m.len / dist;
+                const grad = ctx.createLinearGradient(tailX, tailY, m.x, m.y);
+                grad.addColorStop(0, `rgba(255,255,255,0)`);
+                grad.addColorStop(0.7, `rgba(212,175,55,${m.op*0.5})`);
+                grad.addColorStop(1, `rgba(255,255,255,${m.op})`);
+
+                ctx.beginPath(); ctx.moveTo(tailX, tailY);
+                ctx.lineTo(m.x, m.y);
+                ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255,255,255,${m.op})`; ctx.fill();
+            }
+        }
+
+        let meteorTimer = 0;
+        function animate(t) {
+            ctx.clearRect(0, 0, W, H);
+            drawStars(t); drawMeteors();
+            meteorTimer++;
+            if (meteorTimer % (isMobile ? 80 : 50) === 0) spawnMeteor();
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+
+        // Typewriter
+        const text = "在漫长的宇宙中，能遇见你，是概率为 1/10²² 的奇迹。";
+        const twEl = document.getElementById('twText');
+        let ti = 0;
+        function typeWriter() {
+            if (ti < text.length) {
+                twEl.textContent += text[ti]; ti++;
+                setTimeout(typeWriter, 80 + Math.random() * 60);
+            } else {
+                document.getElementById('btnOpen').classList.add('show');
+            }
+        }
+        setTimeout(typeWriter, 1500);
+
+        document.getElementById('btnOpen').addEventListener('click', () => {
+            document.getElementById('phase1').style.opacity = '0';
+            document.getElementById('phase1').style.pointerEvents = 'none';
+            setTimeout(() => {
+                document.getElementById('phase2').classList.add('active');
+            }, 600);
+        });
+
+        // Heart fireworks
+        const heartParticles = [];
+        let heartActive = false;
+
+        document.getElementById('btnAccept').addEventListener('click', () => {
+            if (heartActive) return;
+            heartActive = true;
+            hCanvas.classList.add('active');
+
+            for (let i = 0; i < (isMobile ? 150 : 300); i++) {
+                const t = (Math.PI * 2 * i) / (isMobile ? 150 : 300);
+                const scale = Math.min(W, H) * 0.012;
+                const tx = 16 * Math.pow(Math.sin(t), 3) * scale;
+                const ty = -(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)) * scale;
+                const colors = ['#ff6b9d','#c44dff','#ffcce6','#D4AF37','#ff88bb'];
+                heartParticles.push({
+                    x: W/2, y: H/2,
+                    tx: W/2 + tx, ty: H/2 + ty,
+                    vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15,
+                    r: Math.random()*3+2,
+                    color: colors[Math.floor(Math.random()*colors.length)],
+                    life: 1, phase: 0
+                });
+            }
+            animateHeart();
+        });
+
+        function animateHeart() {
+            hCtx.clearRect(0, 0, W, H);
+            let allDead = true;
+            for (const p of heartParticles) {
+                if (p.life <= 0) continue;
+                allDead = false;
+                p.phase += 0.02;
+                if (p.phase < 1) {
+                    p.x += p.vx; p.y += p.vy;
+                    p.vx *= 0.96; p.vy *= 0.96;
+                } else {
+                    p.x += (p.tx - p.x) * 0.05;
+                    p.y += (p.ty - p.y) * 0.05;
+                }
+                hCtx.beginPath();
+                hCtx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+                hCtx.fillStyle = p.color;
+                hCtx.globalAlpha = p.life;
+                hCtx.fill();
+                hCtx.globalAlpha = 1;
+                p.life -= 0.003;
+            }
+            if (!allDead) requestAnimationFrame(animateHeart);
+        }
+    </script>
+</body>
+</html>

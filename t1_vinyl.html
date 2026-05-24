@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>为你播放一首歌</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; overflow-x: hidden;
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Georgia', serif;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            transition: background 4s ease-in-out;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+        }
+        body.playing { animation: bgBreath 8s ease-in-out infinite; }
+        @keyframes bgBreath {
+            0%   { background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); }
+            25%  { background: linear-gradient(135deg, #2d1b3d, #1a1a2e, #16213e); }
+            50%  { background: linear-gradient(135deg, #0f3460, #1a1a2e, #2d1b3d); }
+            75%  { background: linear-gradient(135deg, #16213e, #0f3460, #1a1a2e); }
+            100% { background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); }
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 13px;
+            padding: 8px 16px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; border-color: rgba(212,175,55,0.3); }
+
+        #turntable {
+            position: relative; width: min(500px, 90vw); margin: 20px auto 0;
+        }
+
+        .plinth {
+            position: relative; width: 100%;
+            padding-bottom: 70%;
+            background: linear-gradient(180deg, #3e2723 0%, #4e342e 30%, #5d4037 100%);
+            border-radius: 16px;
+            box-shadow:
+                0 20px 60px rgba(0,0,0,0.5),
+                inset 0 2px 0 rgba(255,255,255,0.1),
+                inset 0 -2px 4px rgba(0,0,0,0.3);
+        }
+        .plinth::before {
+            content: ''; position: absolute; inset: 0;
+            background: repeating-linear-gradient(
+                90deg, transparent, transparent 3px,
+                rgba(255,255,255,0.015) 3px, rgba(255,255,255,0.015) 4px
+            ); border-radius: 16px;
+        }
+
+        .platter {
+            position: absolute; top: 15%; left: 8%;
+            width: 55%; aspect-ratio: 1;
+            background: radial-gradient(circle, #c0c0c0 0%, #a0a0a0 40%, #888 100%);
+            border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .vinyl {
+            position: absolute; inset: 5%;
+            background: radial-gradient(circle, #1a1a1a 0%, #111 100%);
+            border-radius: 50%; overflow: hidden;
+            box-shadow: 0 0 0 2px #333, 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .vinyl::before {
+            content: ''; position: absolute; inset: 0;
+            background: repeating-radial-gradient(circle at center,
+                transparent 0px, transparent 3px,
+                rgba(255,255,255,0.03) 3px, rgba(255,255,255,0.03) 4px);
+            border-radius: 50%;
+        }
+        .vinyl::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, transparent 30%,
+                rgba(255,255,255,0.08) 45%, transparent 50%,
+                rgba(255,255,255,0.05) 55%, transparent 65%);
+            border-radius: 50%;
+        }
+        .vinyl.spinning { animation: spin 3s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .label {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 35%; aspect-ratio: 1; border-radius: 50%;
+            background: radial-gradient(circle, #e91e63, #c2185b, #ad1457);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 2;
+        }
+        .label-title {
+            font-size: clamp(6px, 1.5vw, 9px);
+            color: #fff; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+        }
+        .label-sub {
+            font-size: clamp(4px, 1vw, 6px);
+            color: rgba(255,255,255,0.7); margin-top: 2px;
+        }
+        .spindle {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px; height: 8px;
+            background: radial-gradient(circle, #ddd, #999);
+            border-radius: 50%; z-index: 3;
+        }
+
+        .tone-arm-assembly {
+            position: absolute; top: 5%; right: 5%;
+            width: 30%; height: 50%; z-index: 10;
+        }
+        .tone-arm-pivot {
+            position: absolute; top: 0; right: 0;
+            width: 24px; height: 24px;
+            background: radial-gradient(circle, #bbb, #777);
+            border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.4); z-index: 2;
+        }
+        .tone-arm {
+            position: absolute; top: 10px; right: 10px;
+            width: 3px; height: 65%;
+            background: linear-gradient(180deg, #ccc, #999, #aaa);
+            transform-origin: top center;
+            transform: rotate(-25deg);
+            transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.3); border-radius: 2px;
+        }
+        .tone-arm.active { transform: rotate(8deg); }
+        .tone-arm::after {
+            content: ''; position: absolute;
+            bottom: -8px; left: -3px;
+            width: 9px; height: 12px;
+            background: #666; border-radius: 1px 1px 2px 2px;
+        }
+
+        .controls {
+            position: absolute; bottom: 8%; right: 8%;
+            display: flex; gap: 12px; align-items: center;
+        }
+        .btn-play {
+            width: 44px; height: 44px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+            color: #fff; font-size: 16px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            transition: all 0.3s;
+        }
+        .btn-play:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.4);
+        }
+        .btn-play svg { width: 18px; height: 18px; fill: #fff; }
+
+        .progress-bar {
+            max-width: min(520px, 85vw); margin: 30px auto 20px;
+            height: 2px; background: rgba(255,255,255,0.1);
+            border-radius: 1px; overflow: hidden;
+            opacity: 0; transition: opacity 0.5s;
+        }
+        .progress-bar.visible { opacity: 1; }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #e91e63, #ff6090);
+            transition: width 0.3s linear;
+        }
+
+        #lyrics {
+            max-width: min(520px, 85vw); margin: 10px auto 60px;
+            text-align: center; padding: 0 20px;
+        }
+        .lyric-line {
+            font-size: clamp(15px, 3vw, 20px);
+            color: rgba(255,255,255,0.15);
+            line-height: 2.4; letter-spacing: 2px;
+            transition: all 1s ease; font-weight: 300;
+        }
+        .lyric-line.active {
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+        .lyric-line.done { color: rgba(255,255,255,0.35); }
+        .lyric-line.highlight {
+            color: #e91e63;
+            text-shadow: 0 0 25px rgba(233,30,99,0.4);
+            font-size: clamp(20px, 4.5vw, 28px); font-weight: 400;
+        }
+
+        .particle {
+            position: fixed; border-radius: 50%;
+            pointer-events: none;
+            animation: floatParticle 6s ease-in-out infinite;
+        }
+        @keyframes floatParticle {
+            0%,100% { transform: translateY(0) scale(1); opacity: 0.4; }
+            50% { transform: translateY(-40px) scale(1.5); opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div id="turntable">
+        <div class="plinth">
+            <div class="platter">
+                <div class="vinyl" id="vinyl">
+                    <div class="label">
+                        <div class="label-title">For You</div>
+                        <div class="label-sub">Side A</div>
+                    </div>
+                    <div class="spindle"></div>
+                </div>
+            </div>
+            <div class="tone-arm-assembly">
+                <div class="tone-arm-pivot"></div>
+                <div class="tone-arm" id="toneArm"></div>
+            </div>
+            <div class="controls">
+                <button class="btn-play" id="btnPlay">
+                    <svg viewBox="0 0 24 24" id="playIcon"><polygon points="6,3 20,12 6,21"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div id="lyrics">
+        <div class="lyric-line" data-idx="0">当黑胶开始旋转的那一刻</div>
+        <div class="lyric-line" data-idx="1">所有的等待都有了意义</div>
+        <div class="lyric-line" data-idx="2">你是我生命里最动听的旋律</div>
+        <div class="lyric-line" data-idx="3">每一次心跳，都是爱的节拍</div>
+        <div class="lyric-line" data-idx="4">我想把余生的每一天</div>
+        <div class="lyric-line" data-idx="5">都为你播放同一首歌</div>
+        <div class="lyric-line highlight" data-idx="6">那首歌的名字，叫做「喜欢你」</div>
+        <div class="lyric-line" data-idx="7">你愿意，和我一起听下去吗？</div>
+    </div>
+
+    <script>
+        const body = document.body;
+        const vinyl = document.getElementById('vinyl');
+        const toneArm = document.getElementById('toneArm');
+        const btnPlay = document.getElementById('btnPlay');
+        const playIcon = document.getElementById('playIcon');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const lyricLines = document.querySelectorAll('.lyric-line');
+
+        let isPlaying = false;
+        let currentLine = -1;
+        let lyricInterval = null;
+        let progressInterval = null;
+        const totalLines = lyricLines.length;
+        const lineDuration = 3500;
+
+        // Floating particles
+        const pCount = window.innerWidth < 768 ? 8 : 15;
+        for (let i = 0; i < pCount; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.cssText = `left:${Math.random()*100}vw;top:${Math.random()*100}vh;
+                width:${2+Math.random()*3}px;height:${2+Math.random()*3}px;
+                animation-delay:${Math.random()*6}s;animation-duration:${4+Math.random()*4}s;`;
+            const colors = ['rgba(233,30,99,0.4)','rgba(212,175,55,0.3)','rgba(255,255,255,0.3)'];
+            p.style.background = colors[Math.floor(Math.random()*colors.length)];
+            document.body.appendChild(p);
+        }
+
+        btnPlay.addEventListener('click', () => {
+            if (!isPlaying) {
+                isPlaying = true;
+                body.classList.add('playing');
+                vinyl.classList.add('spinning');
+                toneArm.classList.add('active');
+                playIcon.innerHTML = '<rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/>';
+                progressBar.classList.add('visible');
+                currentLine = 0; highlightLine(0);
+                lyricInterval = setInterval(() => {
+                    currentLine++;
+                    if (currentLine < totalLines) highlightLine(currentLine);
+                    else clearInterval(lyricInterval);
+                }, lineDuration);
+                let prog = 0;
+                const totalDur = totalLines * lineDuration;
+                progressInterval = setInterval(() => {
+                    prog += 100;
+                    progressFill.style.width = Math.min((prog/totalDur)*100, 100) + '%';
+                    if (prog >= totalDur) clearInterval(progressInterval);
+                }, 100);
+            } else {
+                isPlaying = false;
+                body.classList.remove('playing');
+                vinyl.classList.remove('spinning');
+                toneArm.classList.remove('active');
+                playIcon.innerHTML = '<polygon points="6,3 20,12 6,21"/>';
+                clearInterval(lyricInterval); clearInterval(progressInterval);
+                currentLine = -1;
+                lyricLines.forEach(l => l.classList.remove('active','done','highlight'));
+                progressFill.style.width = '0%';
+                progressBar.classList.remove('visible');
+            }
+        });
+
+        function highlightLine(idx) {
+            lyricLines.forEach((line, i) => {
+                line.classList.remove('active');
+                if (i < idx) line.classList.add('done');
+                if (i === idx) { line.classList.add('active'); line.scrollIntoView({behavior:'smooth',block:'center'}); }
+            });
+        }
+    </script>
+</body>
+</html>

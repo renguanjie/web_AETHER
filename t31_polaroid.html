@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>拍立得记忆</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background: #1a1a1a;
+            font-family: 'PingFang SC', 'Helvetica Neue', sans-serif;
+        }
+        .darkroom {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+        .polaroid {
+            width: min(320px, 80vw);
+            background: #f5f0e8;
+            padding: 16px 16px 60px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            transform: rotate(-2deg);
+            position: relative;
+            opacity: 0; animation: fadeUp 1s ease 0.5s forwards;
+        }
+        @keyframes fadeUp {
+            to { opacity: 1; transform: rotate(-2deg) translateY(0); }
+            from { transform: rotate(-2deg) translateY(20px); }
+        }
+        .photo-frame {
+            width: 100%; aspect-ratio: 1;
+            background: #222; position: relative;
+            overflow: hidden; border-radius: 2px;
+        }
+        .photo-content {
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, #ffecd2, #fcb69f, #a1c4fd, #c2e9fb);
+            background-size: 400% 400%;
+            animation: gradientMove 8s ease infinite;
+        }
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .photo-overlay {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,1);
+            transition: opacity 0.3s ease;
+            cursor: crosshair;
+        }
+        .develop-ring {
+            position: absolute; border-radius: 50%;
+            border: 2px solid rgba(255,107,157,0.3);
+            pointer-events: none; opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .caption {
+            text-align: center; margin-top: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px; color: #888; letter-spacing: 1px;
+        }
+        .caption .title {
+            font-size: 14px; color: #37352f; font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .caption .date { font-size: 10px; color: #aaa; }
+
+        .progress-info {
+            margin-top: 24px; text-align: center;
+            opacity: 0; animation: fadeUp 0.8s ease 1s forwards;
+        }
+        .progress-label {
+            font-size: 11px; color: #444; letter-spacing: 3px;
+            margin-bottom: 8px;
+        }
+        .progress-pct {
+            font-size: 24px; color: #ff6b9d;
+            font-weight: 200; font-variant-numeric: tabular-nums;
+        }
+        .progress-hint {
+            font-size: 10px; color: #333; margin-top: 8px;
+            letter-spacing: 2px;
+        }
+
+        .final-overlay {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, rgba(255,240,245,0.98), rgba(255,250,252,0.99));
+            z-index: 100; opacity: 0; pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+        .final-overlay.visible { opacity: 1; pointer-events: auto; }
+        .final-text {
+            font-size: clamp(18px, 4vw, 30px); color: #37352f;
+            letter-spacing: 4px; font-weight: 200; text-align: center;
+            line-height: 1.8; opacity: 0; animation: rise 1.5s ease 0.5s forwards;
+        }
+        .final-text .pink { color: #ff6b9d; font-weight: 500; }
+        .final-sub {
+            font-size: 11px; color: #888; letter-spacing: 3px; margin-top: 14px;
+            opacity: 0; animation: rise 1.5s ease 1.5s forwards;
+        }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="darkroom">
+        <div class="polaroid">
+            <div class="photo-frame">
+                <div class="photo-content"></div>
+                <div class="photo-overlay" id="overlay"></div>
+            </div>
+            <div class="caption">
+                <div class="title">our memory #001</div>
+                <div class="date" id="date"></div>
+            </div>
+        </div>
+        <div class="progress-info">
+            <div class="progress-label">显影进度</div>
+            <div class="progress-pct" id="pct">0%</div>
+            <div class="progress-hint">移动鼠标来冲洗照片</div>
+        </div>
+    </div>
+
+    <div class="final-overlay" id="final">
+        <div class="final-text">照片已完全显影<br><span class="pink">原来里面全是你</span></div>
+        <div class="final-sub">POLAROID DEVELOPED — MEMORY #001 SAVED</div>
+    </div>
+
+    <script>
+        var overlay = document.getElementById('overlay');
+        var pctEl = document.getElementById('pct');
+        var dateEl = document.getElementById('date');
+        var revealed = false;
+        var totalPixels = 0;
+        var revealedPixels = 0;
+
+        var now = new Date();
+        dateEl.textContent = now.getFullYear() + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + String(now.getDate()).padStart(2,'0');
+
+        // Track mouse movement to "develop" photo
+        var lastX = 0, lastY = 0;
+        var developRadius = 40;
+
+        document.addEventListener('mousemove', function(e) {
+            if (revealed) return;
+            var dx = e.clientX - lastX;
+            var dy = e.clientY - lastY;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            var developArea = dist * developRadius * 2;
+
+            totalPixels += developArea;
+            revealedPixels += developArea;
+
+            // Create reveal circle
+            var rect = overlay.getBoundingClientRect();
+            var x = e.clientX - rect.left;
+            var y = e.clientY - rect.top;
+
+            var circle = document.createElement('div');
+            circle.className = 'develop-ring';
+            circle.style.left = (x - developRadius) + 'px';
+            circle.style.top = (y - developRadius) + 'px';
+            circle.style.width = developRadius * 2 + 'px';
+            circle.style.height = developRadius * 2 + 'px';
+            circle.style.opacity = '1';
+            overlay.appendChild(circle);
+
+            // Use radial gradient to clear area
+            var currentBg = overlay.style.background || '';
+            var grad = 'radial-gradient(circle at ' + x + 'px ' + y + 'px, transparent ' + developRadius + 'px, rgba(0,0,0,0.95) ' + (developRadius + 5) + 'px)';
+
+            if (!overlay._gradients) overlay._gradients = [];
+            overlay._gradients.push(grad);
+
+            if (overlay._gradients.length <= 1) {
+                overlay.style.background = grad;
+            } else {
+                // Stack gradients using multiple backgrounds
+                overlay.style.background = overlay._gradients.join(', ');
+            }
+
+            var pct = Math.min(100, Math.floor((revealedPixels / (rect.width * rect.height)) * 100 * 3));
+            pct = Math.min(100, pct);
+            pctEl.textContent = pct + '%';
+
+            if (pct >= 100 && !revealed) {
+                revealed = true;
+                overlay.style.transition = 'opacity 1.5s ease';
+                overlay.style.opacity = '0';
+                setTimeout(function() {
+                    document.getElementById('final').classList.add('visible');
+                }, 1000);
+            }
+
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+
+        // Touch support
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            var touch = e.touches[0];
+            var mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX, clientY: touch.clientY
+            });
+            document.dispatchEvent(mouseEvent);
+        }, { passive: false });
+    </script>
+</body>
+</html>

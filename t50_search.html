@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>搜索记录</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow-y: auto; background: #1a1a1a; font-family: -apple-system, 'PingFang SC', sans-serif; color: #fff; }
+        .search-page { max-width: 400px; margin: 0 auto; min-height: 100vh; padding: 20px; }
+        .search-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: rgba(255,255,255,0.08); border-radius: 25px; margin-bottom: 24px; }
+        .search-bar input { flex: 1; background: none; border: none; color: #fff; font-size: 14px; outline: none; font-family: inherit; }
+        .search-bar input::placeholder { color: #555; }
+        .search-icon { font-size: 16px; color: #555; }
+        .section-title { font-size: 11px; color: #666; letter-spacing: 2px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .clear-btn { font-size: 10px; color: #ff6b9d; cursor: pointer; }
+        .history-list { list-style: none; }
+        .history-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); opacity: 0; transform: translateX(-10px); animation: slideIn 0.4s ease forwards; }
+        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+        .history-icon { font-size: 16px; color: #555; flex-shrink: 0; }
+        .history-text { flex: 1; font-size: 14px; color: #ccc; }
+        .history-text .pink { color: #ff6b9d; }
+        .history-arrow { color: #333; font-size: 12px; }
+        .trending { margin-top: 30px; }
+        .trending-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+        .trending-rank { font-size: 14px; font-weight: 700; color: #333; width: 24px; }
+        .trending-rank.hot { color: #ff6b9d; }
+        .trending-text { font-size: 13px; color: #888; }
+        .trending-text .pink { color: #ff6b9d; }
+        .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at center, rgba(20,10,30,0.97), rgba(0,0,0,0.99)); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 1.5s ease; }
+        .overlay.visible { opacity: 1; pointer-events: auto; }
+        .overlay-text { font-size: clamp(18px, 4vw, 28px); color: #fff; letter-spacing: 4px; text-align: center; opacity: 0; animation: rise 1.5s ease 0.5s forwards; }
+        .overlay-text .pink { color: #ff6b9d; }
+        .overlay-sub { font-size: 11px; color: #555; letter-spacing: 3px; margin-top: 14px; opacity: 0; animation: rise 1.5s ease 1.5s forwards; }
+        @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="search-page">
+        <div class="search-bar"><span class="search-icon">&#128269;</span><input type="text" placeholder="搜索..." readonly></div>
+        <div class="section-title"><span>搜索历史</span><span class="clear-btn">清除</span></div>
+        <ul class="history-list" id="history-list"></ul>
+        <div class="trending">
+            <div class="section-title">热门搜索</div>
+            <div id="trending-list"></div>
+        </div>
+    </div>
+    <div class="overlay" id="overlay">
+        <div class="overlay-text">所有搜索记录<br><span class="pink">指向的都是同一个人</span></div>
+        <div class="overlay-sub">SEARCH HISTORY — ALL ROADS LEAD TO YOU</div>
+    </div>
+    <script>
+        var history = [
+            { icon: '&#128196;', text: '怎么跟喜欢的人表白' },
+            { icon: '&#9749;', text: '第一次约会去哪里' },
+            { icon: '&#127793;', text: '送什么礼物最有心意' },
+            { icon: '&#128220;', text: '喜欢的人不回消息怎么办' },
+            { icon: '&#128150;', text: '<span class="pink">ta 喜欢什么颜色</span>' },
+            { icon: '&#128270;', text: '<span class="pink">ta 的生日是哪天</span>' },
+            { icon: '&#127775;', text: '<span class="pink">怎么让 ta 知道我喜欢 ta</span>' },
+        ];
+        var trending = [
+            { rank: 1, text: '<span class="pink">如何确认双向暗恋</span>' },
+            { rank: 2, text: '表白成功率最高的方式' },
+            { rank: 3, text: '喜欢一个人的 10 个表现' },
+            { rank: 4, text: '<span class="pink">我们是不是心有灵犀</span>' },
+            { rank: 5, text: '在一起之后怎么保持新鲜感' },
+        ];
+        var list = document.getElementById('history-list');
+        history.forEach(function(item, i) {
+            var li = document.createElement('li');
+            li.className = 'history-item';
+            li.style.animationDelay = (i * 0.15) + 's';
+            li.innerHTML = '<span class="history-icon">' + item.icon + '</span><span class="history-text">' + item.text + '</span><span class="history-arrow">&gt;</span>';
+            list.appendChild(li);
+        });
+        var tl = document.getElementById('trending-list');
+        trending.forEach(function(item) {
+            var div = document.createElement('div');
+            div.className = 'trending-item';
+            div.innerHTML = '<span class="trending-rank' + (item.rank <= 3 ? ' hot' : '') + '">' + item.rank + '</span><span class="trending-text">' + item.text + '</span>';
+            tl.appendChild(div);
+        });
+        setTimeout(function() { document.getElementById('overlay').classList.add('visible'); }, history.length * 150 + 3000);
+    </script>
+</body>
+</html>

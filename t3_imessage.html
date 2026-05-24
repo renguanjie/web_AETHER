@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>来自某人的消息</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; overflow: hidden;
+        }
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 200;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; border-color: rgba(212,175,55,0.3); }
+
+        #phone {
+            width: min(420px, 100vw); height: 100vh; max-height: 780px;
+            background: #000; position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        .status-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 20px; background: rgba(30,30,30,0.95);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 10;
+        }
+        .status-time { color: #fff; font-size: 15px; font-weight: 600; }
+
+        .chat-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 16px 12px;
+            background: rgba(30,30,30,0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 0.5px solid rgba(255,255,255,0.1); z-index: 10;
+        }
+        .avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b9d, #c44dff);
+            display: flex; justify-content: center; align-items: center; font-size: 16px;
+        }
+        .contact-info { flex: 1; }
+        .contact-name { color: #fff; font-size: 16px; font-weight: 600; }
+        .contact-status { color: rgba(255,255,255,0.4); font-size: 11px; }
+
+        #chatArea {
+            flex: 1; overflow-y: auto; padding: 15px 12px;
+            display: flex; flex-direction: column; gap: 6px;
+            scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+        }
+        .timestamp {
+            text-align: center; color: rgba(255,255,255,0.3);
+            font-size: 12px; margin: 10px 0;
+        }
+        .msg {
+            max-width: 78%; padding: 8px 14px; border-radius: 18px;
+            font-size: 16px; line-height: 1.45; opacity: 0;
+            transform: translateY(15px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+            word-wrap: break-word;
+        }
+        .msg.show { opacity: 1; transform: translateY(0) scale(1); }
+        .msg.received { align-self: flex-start; background: #2c2c2e; color: #fff; border-bottom-left-radius: 6px; }
+        .msg.sent { align-self: flex-end; background: #007aff; color: #fff; border-bottom-right-radius: 6px; }
+
+        .typing {
+            align-self: flex-start; background: #2c2c2e; border-radius: 18px;
+            padding: 12px 16px; display: none; border-bottom-left-radius: 6px;
+        }
+        .typing.show { display: flex; gap: 4px; align-items: center; }
+        .typing-dot {
+            width: 7px; height: 7px; background: rgba(255,255,255,0.4);
+            border-radius: 50%; animation: typingBounce 1.4s infinite;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce {
+            0%,60%,100%{transform:translateY(0);opacity:0.4;}
+            30%{transform:translateY(-6px);opacity:1;}
+        }
+
+        .question-bubble {
+            align-self: flex-end; background: #007aff; color: #fff;
+            border-radius: 18px; padding: 12px 16px; max-width: 85%; text-align: center;
+            opacity: 0; transform: translateY(15px);
+            transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+            border-bottom-right-radius: 6px;
+        }
+        .question-bubble.show { opacity: 1; transform: translateY(0); }
+        .question-text { font-size: 16px; margin-bottom: 12px; line-height: 1.5; }
+        .question-buttons { display: flex; gap: 10px; justify-content: center; }
+        .q-btn {
+            padding: 8px 22px; border-radius: 20px; border: none;
+            font-size: 15px; cursor: pointer; transition: all 0.2s; font-weight: 500;
+        }
+        .q-btn.agree { background: #fff; color: #007aff; }
+        .q-btn.tight-agree { background: rgba(255,255,255,0.2); color: #fff; }
+
+        .reply-bubble {
+            align-self: flex-end; background: #007aff; color: #fff;
+            border-radius: 18px; padding: 10px 16px; font-size: 18px;
+            opacity: 0; transform: translateY(15px);
+            transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+            border-bottom-right-radius: 6px; display: none;
+        }
+        .reply-bubble.show { opacity: 1; transform: translateY(0); }
+
+        .input-bar {
+            display: flex; align-items: center; gap: 8px; padding: 8px 12px 24px;
+            background: rgba(30,30,30,0.95);
+            border-top: 0.5px solid rgba(255,255,255,0.1);
+        }
+        .input-fake {
+            flex: 1; background: #1c1c1e; border-radius: 20px;
+            padding: 8px 14px; color: rgba(255,255,255,0.3);
+            font-size: 15px; border: none;
+        }
+
+        #celebration {
+            position: fixed; inset: 0; z-index: 150;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+        #celebration.active { display: flex; }
+        #celebration h1 {
+            font-size: clamp(28px, 7vw, 48px); color: #fff;
+            font-weight: 300; letter-spacing: 4px; margin-bottom: 15px;
+        }
+        #celebration p {
+            font-size: clamp(14px, 3vw, 18px); color: rgba(255,255,255,0.6);
+            letter-spacing: 2px;
+        }
+        .celeb-heart {
+            font-size: 60px; margin-bottom: 20px;
+            animation: celebPulse 0.6s infinite;
+        }
+        @keyframes celebPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.15);} }
+
+        .heart-float {
+            position: fixed; font-size: 24px; pointer-events: none; z-index: 160;
+            animation: heartFloat 3s ease-out forwards;
+        }
+        @keyframes heartFloat {
+            0%{opacity:1;transform:translateY(0) scale(1);}
+            100%{opacity:0;transform:translateY(-120vh) scale(0.3);}
+        }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div id="phone">
+        <div class="status-bar">
+            <span class="status-time" id="statusTime">9:41</span>
+        </div>
+        <div class="chat-header">
+            <div class="avatar">&#128151;</div>
+            <div class="contact-info">
+                <div class="contact-name">Ta</div>
+                <div class="contact-status" id="contactStatus">iMessage</div>
+            </div>
+        </div>
+        <div id="chatArea">
+            <div class="timestamp">今天 21:30</div>
+            <div class="typing" id="typing">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+        <div class="input-bar">
+            <input class="input-fake" placeholder="信息" readonly>
+        </div>
+    </div>
+
+    <div id="celebration">
+        <div class="celeb-heart">&#10084;</div>
+        <h1>太好了！</h1>
+        <p>从今以后，我们不再是一个人了</p>
+    </div>
+
+    <script>
+        const now = new Date();
+        document.getElementById('statusTime').textContent =
+            now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+
+        const chatArea = document.getElementById('chatArea');
+        const typing = document.getElementById('typing');
+        const contactStatus = document.getElementById('contactStatus');
+
+        const messages = [
+            { text: '在吗？', delay: 2000 },
+            { text: '其实有件事我一直想跟你说', delay: 1800 },
+            { text: '每次看到你笑的时候', delay: 2200 },
+            { text: '我的心就会跳得特别快', delay: 1800 },
+            { text: '我不知道你有没有感觉到', delay: 2500 },
+            { text: '但是……', delay: 2000 },
+            { text: '我喜欢你，很久了', delay: 2000 },
+        ];
+
+        function scroll() { chatArea.scrollTop = chatArea.scrollHeight; }
+        function showTyping() { typing.classList.add('show'); contactStatus.textContent = '正在输入...'; scroll(); }
+        function hideTyping() { typing.classList.remove('show'); contactStatus.textContent = 'iMessage'; }
+
+        function addMsg(text, type) {
+            const msg = document.createElement('div');
+            msg.className = `msg ${type}`; msg.textContent = text;
+            chatArea.insertBefore(msg, typing);
+            requestAnimationFrame(() => { msg.classList.add('show'); scroll(); });
+        }
+
+        function sequence(idx) {
+            if (idx >= messages.length) { showQuestion(); return; }
+            showTyping();
+            setTimeout(() => {
+                hideTyping(); addMsg(messages[idx].text, 'received');
+                setTimeout(() => sequence(idx + 1), messages[idx].delay);
+            }, 1500 + Math.random() * 800);
+        }
+
+        function showQuestion() {
+            showTyping();
+            setTimeout(() => {
+                hideTyping();
+                const qb = document.createElement('div');
+                qb.className = 'question-bubble';
+                qb.innerHTML = `
+                    <div class="question-text">你愿意做我的女朋友吗？</div>
+                    <div class="question-buttons">
+                        <button class="q-btn agree" id="btnAgree">同意</button>
+                        <button class="q-btn tight-agree" id="btnTight">抱紧同意</button>
+                    </div>`;
+                chatArea.insertBefore(qb, typing);
+                requestAnimationFrame(() => { qb.classList.add('show'); scroll(); });
+                document.getElementById('btnAgree').addEventListener('click', celebrate);
+                document.getElementById('btnTight').addEventListener('click', celebrate);
+            }, 1800);
+        }
+
+        function celebrate() {
+            const reply = document.createElement('div');
+            reply.className = 'reply-bubble'; reply.innerHTML = '&#10084;&#65039;';
+            reply.style.display = 'block';
+            chatArea.insertBefore(reply, typing);
+            requestAnimationFrame(() => reply.classList.add('show'));
+            setTimeout(() => {
+                document.getElementById('celebration').classList.add('active');
+                spawnHearts();
+            }, 800);
+        }
+
+        function spawnHearts() {
+            const hearts = ['&#10084;','&#10084;&#65039;','&#128151;','&#128149;'];
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const h = document.createElement('div');
+                    h.className = 'heart-float';
+                    h.innerHTML = hearts[Math.floor(Math.random()*hearts.length)];
+                    h.style.left = (10+Math.random()*80)+'vw'; h.style.bottom = '0';
+                    h.style.animationDuration = (2+Math.random()*2)+'s';
+                    document.body.appendChild(h);
+                    setTimeout(() => h.remove(), 4000);
+                }, i * 200);
+            }
+        }
+
+        setTimeout(() => sequence(0), 2000);
+    </script>
+</body>
+</html>

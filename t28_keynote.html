@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>新品发布会告白</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow-x: hidden; overflow-y: auto;
+            background: #000; color: #fff;
+            font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+            scroll-snap-type: y proximity;
+        }
+        section {
+            min-height: 100vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 40px 24px; scroll-snap-align: start;
+            position: relative; overflow: hidden;
+        }
+        .reveal {
+            opacity: 0; transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        .hero-label {
+            font-size: 12px; color: #666; letter-spacing: 4px;
+            text-transform: uppercase; margin-bottom: 16px;
+        }
+        .hero-title {
+            font-size: clamp(32px, 8vw, 64px); font-weight: 700;
+            text-align: center; line-height: 1.2; margin-bottom: 12px;
+        }
+        .hero-title.gradient {
+            background: linear-gradient(135deg, #ff6b9d, #c084fc, #4fc3f7);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero-sub {
+            font-size: clamp(16px, 3vw, 22px); color: #888;
+            text-align: center; font-weight: 300;
+        }
+
+        .spec-card {
+            max-width: 400px; width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 30px; margin-top: 30px;
+        }
+        .spec-label { font-size: 11px; color: #555; letter-spacing: 2px; text-transform: uppercase; }
+        .spec-value {
+            font-size: clamp(28px, 6vw, 48px); font-weight: 700;
+            margin: 8px 0 4px;
+        }
+        .spec-note { font-size: 13px; color: #666; }
+
+        .typed-text {
+            font-size: clamp(18px, 4vw, 28px); color: #fff;
+            text-align: center; line-height: 1.8; min-height: 120px;
+        }
+        .typed-cursor {
+            display: inline-block; width: 2px; height: 1em;
+            background: #fff; animation: blink 0.6s step-end infinite;
+            vertical-align: text-bottom; margin-left: 2px;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .cta-btn {
+            margin-top: 30px; padding: 16px 48px;
+            background: linear-gradient(135deg, #ff6b9d, #c084fc);
+            border: none; border-radius: 30px;
+            color: #fff; font-size: 18px; letter-spacing: 3px;
+            cursor: pointer; font-family: inherit; transition: all 0.3s ease;
+        }
+        .cta-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(255,107,157,0.4);
+        }
+
+        .final-overlay {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, rgba(20,10,30,0.98), rgba(0,0,0,0.99));
+            z-index: 100; opacity: 0; pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+        .final-overlay.visible { opacity: 1; pointer-events: auto; }
+        .final-heart { font-size: 60px; animation: heartbeat 1s ease-in-out infinite; }
+        @keyframes heartbeat {
+            0%,100% { transform: scale(1); }
+            15% { transform: scale(1.2); }
+            30% { transform: scale(1); }
+        }
+        .final-text {
+            font-size: clamp(20px, 5vw, 36px); color: #fff;
+            letter-spacing: 4px; font-weight: 200; margin-top: 20px;
+            text-align: center; opacity: 0; animation: rise 1.5s ease 0.5s forwards;
+        }
+        .final-text .pink { color: #ff6b9d; font-weight: 500; }
+        .final-sub {
+            font-size: 11px; color: #555; letter-spacing: 3px; margin-top: 14px;
+            opacity: 0; animation: rise 1.5s ease 1.5s forwards;
+        }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .scroll-hint {
+            position: absolute; bottom: 30px;
+            font-size: 11px; color: #333; letter-spacing: 3px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+    </style>
+</head>
+<body>
+    <section id="s1">
+        <div class="reveal">
+            <div class="hero-label">Apple Event &bull; Special Edition</div>
+            <div class="hero-title">The Heart</div>
+            <div class="hero-sub">史上最强大的情感芯片</div>
+        </div>
+        <div class="scroll-hint">&#8595; 向下滚动</div>
+    </section>
+
+    <section id="s2">
+        <div class="reveal">
+            <div class="hero-label">Super Retina Heart Display</div>
+            <div class="hero-title gradient">6.7 英寸</div>
+            <div class="hero-sub">装下你所有笑容的尺寸</div>
+        </div>
+    </section>
+
+    <section id="s3">
+        <div class="reveal">
+            <div class="hero-label">A-Series Chip</div>
+            <div class="hero-title">A<span style="color:#ff6b9d;">Love</span>17</div>
+            <div class="hero-sub">每秒 170 亿次心跳运算</div>
+            <div class="spec-card">
+                <div class="spec-label">NEURAL ENGINE</div>
+                <div class="spec-value" style="color:#4fc3f7;">16-core</div>
+                <div class="spec-note">专门用于识别你的情绪</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="s4">
+        <div class="reveal">
+            <div class="hero-label">Battery Life</div>
+            <div class="hero-title gradient">forever</div>
+            <div class="hero-sub">全天候续航，永不关机</div>
+            <div class="spec-card">
+                <div class="spec-label">充电方式</div>
+                <div class="spec-value" style="color:#ff6b9d;">&#10084;</div>
+                <div class="spec-note">你的一个微笑，即可充满</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="s5">
+        <div class="reveal">
+            <div class="hero-label">One More Thing...</div>
+            <div class="typed-text" id="typed"></div>
+            <button class="cta-btn" id="cta-btn">我愿意</button>
+        </div>
+    </section>
+
+    <div class="final-overlay" id="final">
+        <div class="final-heart">&#10084;</div>
+        <div class="final-text">One More Thing:<br><span class="pink">我爱你</span></div>
+        <div class="final-sub">KEYNOTE COMPLETE — PRODUCT LAUNCHED IN YOUR HEART</div>
+    </div>
+
+    <script>
+        // Scroll reveal
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.3 });
+        document.querySelectorAll('.reveal').forEach(function(el) { observer.observe(el); });
+
+        // Typed text on section 5
+        var s5 = document.getElementById('s5');
+        var typed = false;
+        var s5Observer = new IntersectionObserver(function(entries) {
+            if (entries[0].isIntersecting && !typed) {
+                typed = true;
+                typeText();
+            }
+        }, { threshold: 0.5 });
+        s5Observer.observe(s5);
+
+        var msg = "这不是一场发布会。\n这是我的心跳，\n为你准备了很久。";
+        var typedEl = document.getElementById('typed');
+        var idx = 0;
+
+        function typeText() {
+            if (idx < msg.length) {
+                var ch = msg[idx];
+                if (ch === '\n') {
+                    typedEl.innerHTML = typedEl.innerHTML.replace(/<span class="typed-cursor"><\/span>/, '') + '<br><span class="typed-cursor"></span>';
+                } else {
+                    typedEl.innerHTML = typedEl.innerHTML.replace(/<span class="typed-cursor"><\/span>/, '') + ch + '<span class="typed-cursor"></span>';
+                }
+                idx++;
+                setTimeout(typeText, 80 + Math.random() * 60);
+            }
+        }
+
+        document.getElementById('cta-btn').addEventListener('click', function() {
+            document.getElementById('final').classList.add('visible');
+        });
+    </script>
+</body>
+</html>

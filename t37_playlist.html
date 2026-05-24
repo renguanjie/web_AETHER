@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>心动歌单</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background: #121212;
+            font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+            color: #fff;
+        }
+        .player {
+            max-width: 400px; margin: 0 auto; padding: 20px;
+            height: 100%; display: flex; flex-direction: column;
+        }
+        .playlist-header {
+            text-align: center; padding: 20px 0 10px;
+            opacity: 0; animation: fadeUp 0.6s ease forwards;
+        }
+        .playlist-header h1 {
+            font-size: 20px; font-weight: 700; margin-bottom: 4px;
+        }
+        .playlist-header .sub { font-size: 11px; color: #888; }
+        .playlist-header .count { font-size: 10px; color: #555; margin-top: 2px; }
+
+        .now-playing {
+            text-align: center; padding: 20px 0;
+            opacity: 0; animation: fadeUp 0.6s ease 0.2s forwards;
+        }
+        .album-cover {
+            width: min(200px, 50vw); aspect-ratio: 1;
+            border-radius: 16px; margin: 0 auto 16px;
+            background: linear-gradient(135deg, #ff6b9d, #c084fc, #4fc3f7);
+            background-size: 300% 300%;
+            animation: gradientMove 4s ease infinite;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 50px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .song-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .song-artist { font-size: 12px; color: #888; }
+
+        .progress-bar {
+            margin: 16px 0 8px;
+            height: 3px; background: rgba(255,255,255,0.1);
+            border-radius: 2px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: #1db954; border-radius: 2px;
+            transition: width 0.3s linear;
+        }
+        .time-row {
+            display: flex; justify-content: space-between;
+            font-size: 10px; color: #555;
+        }
+
+        .controls {
+            display: flex; justify-content: center; align-items: center;
+            gap: 24px; padding: 12px 0 20px;
+        }
+        .ctrl-btn {
+            background: none; border: none; color: #fff;
+            font-size: 20px; cursor: pointer; opacity: 0.7;
+        }
+        .play-btn {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: #1db954; border: none; color: #000;
+            font-size: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .track-list {
+            flex: 1; overflow-y: auto; padding-top: 12px;
+            opacity: 0; animation: fadeUp 0.6s ease 0.4s forwards;
+        }
+        .track {
+            display: flex; align-items: center; padding: 10px 8px;
+            border-radius: 8px; margin-bottom: 2px;
+        }
+        .track:hover { background: rgba(255,255,255,0.05); }
+        .track.active { background: rgba(255,255,255,0.08); }
+        .track-num { width: 24px; font-size: 12px; color: #555; text-align: center; }
+        .track.active .track-num { color: #1db954; }
+        .track-info { flex: 1; margin-left: 8px; }
+        .track-title { font-size: 13px; }
+        .track.active .track-title { color: #1db954; }
+        .track-artist { font-size: 11px; color: #888; margin-top: 1px; }
+        .track-dur { font-size: 11px; color: #555; }
+
+        .eq-mini { display: inline-flex; gap: 2px; align-items: flex-end; height: 14px; }
+        .eq-mini-bar {
+            width: 2px; background: #1db954; border-radius: 1px;
+            animation: eqMini 0.6s ease-in-out infinite alternate;
+        }
+        @keyframes eqMini { from { height: 3px; } to { height: 14px; } }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="player">
+        <div class="playlist-header">
+            <h1>&#127925; 心动歌单</h1>
+            <div class="sub">只为你播放</div>
+            <div class="count">8 首歌曲 &bull; 总时长: forever</div>
+        </div>
+        <div class="now-playing">
+            <div class="album-cover">&#127925;</div>
+            <div class="song-name" id="np-title">遇见你的时候</div>
+            <div class="song-artist" id="np-artist">我 &bull; 心动专辑</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="np-progress"></div></div>
+        <div class="time-row"><span id="np-current">0:00</span><span id="np-total">3:21</span></div>
+        <div class="controls">
+            <button class="ctrl-btn" id="prev-btn">&#9664;&#9664;</button>
+            <button class="play-btn" id="play-btn">&#9654;</button>
+            <button class="ctrl-btn" id="next-btn">&#9654;&#9654;</button>
+        </div>
+        <div class="track-list" id="track-list"></div>
+    </div>
+
+    <script>
+        var tracks = [
+            { title: '遇见你的时候', artist: '我', duration: '3:21' },
+            { title: '心跳漏了一拍', artist: '遇见那天', duration: '4:02' },
+            { title: '晚安，想你', artist: '深夜电台', duration: '3:45' },
+            { title: '笑容收集家', artist: '日常 BGM', duration: '2:58' },
+            { title: '你的眼睛会说话', artist: '第一次对视', duration: '3:33' },
+            { title: '距离三公里', artist: '想念模式', duration: '4:15' },
+            { title: 'Perfect', artist: 'Ed Sheeran', duration: '4:23' },
+            { title: '我愿意', artist: '你和我', duration: '∞:∞' },
+        ];
+        var list = document.getElementById('track-list');
+        var activeIdx = 0, playing = false, progressInterval;
+
+        tracks.forEach(function(t, i) {
+            var div = document.createElement('div');
+            div.className = 'track' + (i === 0 ? ' active' : '');
+            var eqHtml = i === 0 ? '<div class="eq-mini"><div class="eq-mini-bar" style="animation-delay:0s"></div><div class="eq-mini-bar" style="animation-delay:0.2s"></div><div class="eq-mini-bar" style="animation-delay:0.1s"></div></div>' : String(i + 1);
+            div.innerHTML = '<div class="track-num">' + eqHtml + '</div><div class="track-info"><div class="track-title">' + t.title + '</div><div class="track-artist">' + t.artist + '</div></div><div class="track-dur">' + t.duration + '</div>';
+            div.addEventListener('click', (function(idx) { return function() { playTrack(idx); }; })(i));
+            list.appendChild(div);
+        });
+
+        document.getElementById('play-btn').addEventListener('click', function() {
+            playing = !playing;
+            this.innerHTML = playing ? '&#9646;&#9646;' : '&#9654;';
+            if (playing) startProgress(); else clearInterval(progressInterval);
+        });
+
+        function startProgress() {
+            var pct = 0;
+            clearInterval(progressInterval);
+            progressInterval = setInterval(function() {
+                pct += 0.5;
+                if (pct >= 100) { clearInterval(progressInterval); playTrack((activeIdx + 1) % tracks.length); return; }
+                document.getElementById('np-progress').style.width = pct + '%';
+                var totalSec = 201, currentSec = Math.floor(totalSec * pct / 100);
+                document.getElementById('np-current').textContent = Math.floor(currentSec / 60) + ':' + String(currentSec % 60).padStart(2, '0');
+            }, 100);
+        }
+
+        function playTrack(idx) {
+            activeIdx = idx;
+            document.getElementById('np-title').textContent = tracks[idx].title;
+            document.getElementById('np-artist').textContent = tracks[idx].artist + ' • 心动专辑';
+            document.getElementById('np-total').textContent = tracks[idx].duration;
+            document.getElementById('np-progress').style.width = '0%';
+            document.getElementById('np-current').textContent = '0:00';
+            var tracks2 = document.querySelectorAll('.track');
+            tracks2.forEach(function(t, i) {
+                t.classList.toggle('active', i === idx);
+                var numEl = t.querySelector('.track-num');
+                if (i === idx && playing) {
+                    numEl.innerHTML = '<div class="eq-mini"><div class="eq-mini-bar" style="animation-delay:0s"></div><div class="eq-mini-bar" style="animation-delay:0.2s"></div><div class="eq-mini-bar" style="animation-delay:0.1s"></div></div>';
+                } else { numEl.textContent = String(i + 1); }
+            });
+            if (playing) startProgress();
+        }
+
+        document.getElementById('next-btn').addEventListener('click', function() { playTrack((activeIdx + 1) % tracks.length); });
+        document.getElementById('prev-btn').addEventListener('click', function() { playTrack((activeIdx - 1 + tracks.length) % tracks.length); });
+    </script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>致你</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #f5f0eb; min-height: 100vh; overflow-x: hidden;
+            font-family: 'Georgia', 'Noto Serif SC', 'Times New Roman', serif;
+            color: #2c2c2c;
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: #c9a96e; text-decoration: none; font-size: 13px;
+            padding: 8px 16px; border: 1px solid rgba(201,169,110,0.3);
+            border-radius: 20px; transition: all 0.3s;
+            font-family: 'Georgia', serif; letter-spacing: 1px;
+        }
+        .back-btn:hover { background: rgba(201,169,110,0.1); }
+
+        #lightOverlay {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background: radial-gradient(circle at 50% 50%,
+                rgba(201,169,110,0.06) 0%, transparent 60%);
+            transition: background 0.3s ease-out;
+        }
+
+        .hero {
+            min-height: 100vh; display: flex;
+            flex-direction: column; justify-content: center;
+            align-items: center; text-align: center; padding: 40px;
+            position: relative; z-index: 1;
+        }
+        .hero-line {
+            font-size: clamp(28px, 7vw, 64px);
+            font-weight: 300; letter-spacing: 0.15em;
+            line-height: 1.6; opacity: 0; transform: translateY(30px);
+            transition: all 1.5s cubic-bezier(0.25,0.46,0.45,0.94);
+        }
+        .hero-line.visible { opacity: 1; transform: translateY(0); }
+        .hero-sub {
+            font-size: clamp(14px, 2.5vw, 18px);
+            color: #8a8178; letter-spacing: 0.3em;
+            margin-top: 40px; opacity: 0; transition: opacity 2s ease 1.5s;
+        }
+        .hero-sub.visible { opacity: 1; }
+
+        .divider { width: 60px; height: 1px; background: #d4c5b5; margin: 0 auto; }
+
+        .poetry {
+            min-height: 80vh; display: flex;
+            flex-direction: column; justify-content: center;
+            align-items: center; padding: 80px 40px;
+            text-align: center; position: relative; z-index: 1;
+        }
+        .poem-line {
+            font-size: clamp(18px, 4vw, 30px);
+            font-weight: 300; letter-spacing: 0.1em;
+            line-height: 2.2; opacity: 0; transform: translateY(20px);
+            transition: all 1.8s ease; color: #3d3530;
+        }
+        .poem-line.visible { opacity: 1; transform: translateY(0); }
+        .poem-line:nth-child(2) { transition-delay: 0.4s; }
+        .poem-line:nth-child(3) { transition-delay: 0.8s; }
+        .poem-line:nth-child(4) { transition-delay: 1.2s; }
+
+        .seal {
+            position: fixed; bottom: 30px; right: 30px;
+            width: 50px; height: 50px;
+            border: 1px solid rgba(201,169,110,0.4);
+            border-radius: 50%; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            transition: all 0.5s; z-index: 50;
+            background: rgba(245,240,235,0.8);
+        }
+        .seal:hover {
+            border-color: #c9a96e;
+            box-shadow: 0 0 20px rgba(201,169,110,0.2);
+            transform: rotate(15deg);
+        }
+        .seal svg { width: 20px; height: 20px; fill: #c9a96e; }
+
+        #letterOverlay {
+            position: fixed; inset: 0; z-index: 60;
+            background: rgba(245,240,235,0.97);
+            backdrop-filter: blur(10px);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.8s;
+        }
+        #letterOverlay.active { opacity: 1; pointer-events: auto; }
+
+        .letter-content {
+            max-width: 560px; width: 90vw; padding: 50px 40px;
+            font-style: italic; line-height: 2.2; color: #3d3530;
+            font-size: clamp(15px, 3vw, 18px);
+            letter-spacing: 0.05em;
+            border: 1px solid rgba(201,169,110,0.15);
+            border-radius: 8px; background: rgba(255,255,255,0.5);
+        }
+        .letter-content p { margin-bottom: 20px; }
+        .letter-content .sign {
+            text-align: right; margin-top: 40px;
+            color: #c9a96e; font-size: 20px;
+        }
+
+        .close-letter {
+            position: absolute; top: 30px; right: 30px;
+            background: none; border: none;
+            color: #8a8178; font-size: 24px; cursor: pointer;
+            transition: color 0.3s;
+        }
+        .close-letter:hover { color: #2c2c2c; }
+
+        .music-player {
+            margin-top: 30px; padding: 20px;
+            border-top: 1px solid rgba(201,169,110,0.2);
+        }
+        .player-title {
+            font-size: 13px; color: #8a8178;
+            letter-spacing: 2px; margin-bottom: 15px; font-style: normal;
+        }
+        .player-controls { display: flex; align-items: center; gap: 15px; }
+        .play-btn {
+            width: 40px; height: 40px;
+            border: 1px solid #c9a96e; border-radius: 50%;
+            background: transparent; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            transition: all 0.3s;
+        }
+        .play-btn:hover { background: rgba(201,169,110,0.1); }
+        .play-btn svg { width: 14px; height: 14px; fill: #c9a96e; }
+        .progress-track {
+            flex: 1; height: 2px; background: #d4c5b5;
+            border-radius: 1px; overflow: hidden;
+        }
+        .progress-fill { height: 100%; width: 0%; background: #c9a96e; transition: width 0.3s; }
+        .player-time { font-size: 12px; color: #8a8178; font-style: normal; min-width: 40px; }
+    </style>
+</head>
+<body>
+    <div id="lightOverlay"></div>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <section class="hero">
+        <div class="hero-line" data-fade>有些话</div>
+        <div class="hero-line" data-fade>不说，是一辈子的遗憾</div>
+        <div class="hero-line" data-fade>所以，我想告诉你</div>
+        <div class="hero-sub" data-fade-sub>— 致最珍贵的你 —</div>
+    </section>
+
+    <section class="poetry">
+        <div class="divider" style="margin-bottom: 60px;"></div>
+        <div class="poem-line" data-poem>你是我生命中</div>
+        <div class="poem-line" data-poem>最温柔的意外</div>
+        <div class="poem-line" data-poem>也是我最想</div>
+        <div class="poem-line" data-poem>珍惜的必然</div>
+    </section>
+
+    <div class="seal" id="seal" title="发现惊喜">
+        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    </div>
+
+    <div id="letterOverlay">
+        <button class="close-letter" id="closeLetter">&times;</button>
+        <div class="letter-content">
+            <p>亲爱的：</p>
+            <p>我不知道该从什么时候说起。</p>
+            <p>也许是那个不经意的午后，你回头对我微笑的瞬间。也许是无数个深夜里，想起你时心里涌起的那阵温暖。</p>
+            <p>遇见你之前，我以为自己习惯了孤独。遇见你之后，我才发现孤独原来是用来等待你的。</p>
+            <p>我不擅长表达，但有些话如果不说，就会成为永远的遗憾。</p>
+            <p>我喜欢你。不是一时冲动，是每一次见到你，都想再见你。</p>
+            <p>如果你愿意，我想把这份心意，用余生的每一天来证明。</p>
+            <div class="sign">— 一个默默喜欢你很久的人</div>
+
+            <div class="music-player">
+                <div class="player-title">PLAYING: OUR MELODY</div>
+                <div class="player-controls">
+                    <button class="play-btn" id="playBtn">
+                        <svg viewBox="0 0 24 24" id="playIcon"><polygon points="5,3 19,12 5,21"/></svg>
+                    </button>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="progFill"></div>
+                    </div>
+                    <span class="player-time" id="playerTime">0:00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const overlay = document.getElementById('lightOverlay');
+        document.addEventListener('mousemove', e => {
+            const x = (e.clientX / window.innerWidth * 100);
+            const y = (e.clientY / window.innerHeight * 100);
+            overlay.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(201,169,110,0.06) 0%, transparent 60%)`;
+        });
+
+        const fadeEls = document.querySelectorAll('[data-fade]');
+        const poemEls = document.querySelectorAll('[data-poem]');
+        const subEl = document.querySelector('[data-fade-sub]');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.3 });
+
+        fadeEls.forEach(el => observer.observe(el));
+        poemEls.forEach(el => observer.observe(el));
+
+        setTimeout(() => {
+            fadeEls.forEach((el, i) => setTimeout(() => el.classList.add('visible'), i * 500));
+            setTimeout(() => subEl.classList.add('visible'), 1500);
+        }, 500);
+
+        document.getElementById('seal').addEventListener('click', () => {
+            document.getElementById('letterOverlay').classList.add('active');
+        });
+        document.getElementById('closeLetter').addEventListener('click', () => {
+            document.getElementById('letterOverlay').classList.remove('active');
+        });
+
+        let audioCtx, isPlaying = false;
+        const playBtn = document.getElementById('playBtn');
+        const progFill = document.getElementById('progFill');
+        const playerTime = document.getElementById('playerTime');
+
+        playBtn.addEventListener('click', () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.value = 440;
+                gain.gain.value = 0.08;
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start();
+                setTimeout(() => { gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 2); osc.stop(audioCtx.currentTime + 2); }, 500);
+            }
+            isPlaying = !isPlaying;
+            document.getElementById('playIcon').innerHTML = isPlaying
+                ? '<rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/>'
+                : '<polygon points="5,3 19,12 5,21"/>';
+            if (isPlaying) startProgress();
+        });
+
+        let progInterval;
+        function startProgress() {
+            let elapsed = 0;
+            progInterval = setInterval(() => {
+                elapsed++;
+                progFill.style.width = Math.min((elapsed/180)*100, 100) + '%';
+                playerTime.textContent = Math.floor(elapsed/60) + ':' + String(elapsed%60).padStart(2,'0');
+                if (elapsed >= 180) clearInterval(progInterval);
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

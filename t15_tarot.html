@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>塔罗牌占卜</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; overflow: hidden;
+            background: radial-gradient(ellipse at center, #1a0a2e, #0d0515);
+            font-family: 'Georgia', 'Noto Serif SC', serif;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; }
+
+        .title {
+            font-size: clamp(20px, 4vw, 32px); color: rgba(255,255,255,0.7);
+            letter-spacing: 6px; margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 13px; color: rgba(255,255,255,0.3);
+            letter-spacing: 3px; margin-bottom: 40px;
+        }
+
+        .card-table {
+            display: flex; gap: clamp(20px, 5vw, 50px);
+            justify-content: center; flex-wrap: wrap;
+        }
+
+        .tarot-card {
+            width: clamp(120px, 25vw, 180px);
+            height: clamp(200px, 42vw, 300px);
+            perspective: 800px; cursor: pointer;
+        }
+
+        .card-inner {
+            width: 100%; height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tarot-card.flipped .card-inner { transform: rotateY(180deg); }
+
+        .card-face {
+            position: absolute; inset: 0;
+            backface-visibility: hidden;
+            border-radius: 12px;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #2a1a4a, #1a0a3a);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+        .card-front::before {
+            content: ''; position: absolute; inset: 8px;
+            border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 8px;
+        }
+        .card-pattern { font-size: clamp(36px, 8vw, 60px); color: rgba(212, 175, 55, 0.3); }
+        .card-back-label { font-size: 10px; color: rgba(212, 175, 55, 0.5); letter-spacing: 2px; margin-top: 10px; }
+
+        .card-revealed {
+            background: linear-gradient(180deg, #faf8f5, #f0ebe3);
+            transform: rotateY(180deg);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 20px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .card-symbol { font-size: clamp(32px, 7vw, 50px); margin-bottom: 12px; }
+        .card-name {
+            font-size: clamp(14px, 3vw, 18px); color: #1a0a2e;
+            letter-spacing: 2px; margin-bottom: 8px; font-weight: 700;
+        }
+        .card-meaning { font-size: clamp(11px, 2.5vw, 13px); color: #666; line-height: 1.6; }
+        .card-hint { font-size: 10px; color: rgba(255,255,255,0.2); letter-spacing: 2px; margin-top: 8px; }
+
+        .result-overlay {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(0,0,0,0.85);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 1s ease;
+        }
+        .result-overlay.visible { opacity: 1; pointer-events: auto; }
+
+        .result-card {
+            width: min(450px, 90vw); background: linear-gradient(180deg, #2a1a4a, #1a0a3a);
+            border: 2px solid rgba(212, 175, 55, 0.4); border-radius: 16px;
+            padding: 40px 30px; text-align: center;
+            transform: scale(0.8); transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .result-overlay.visible .result-card { transform: scale(1); }
+        .result-symbol { font-size: 60px; margin-bottom: 20px; }
+        .result-title {
+            font-size: clamp(18px, 4vw, 24px); color: #D4AF37;
+            letter-spacing: 4px; margin-bottom: 16px;
+        }
+        .result-text {
+            font-size: clamp(14px, 3vw, 17px); color: rgba(255,255,255,0.7);
+            line-height: 2; letter-spacing: 1px;
+        }
+        .result-confession {
+            font-size: clamp(20px, 5vw, 30px); color: #ff6b9d;
+            letter-spacing: 4px; margin-top: 25px;
+        }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div class="title">塔罗牌占卜</div>
+    <div class="subtitle">翻开一张牌，看看命运说什么</div>
+
+    <div class="card-table">
+        <div class="tarot-card" data-index="0">
+            <div class="card-inner">
+                <div class="card-front">
+                    <div class="card-pattern">&#9788;</div>
+                    <div class="card-back-label">TAROT</div>
+                </div>
+                <div class="card-revealed">
+                    <div class="card-symbol">&#10084;</div>
+                    <div class="card-name">恋人</div>
+                    <div class="card-meaning">命运之轮已转动<br>那个人就在你身边</div>
+                </div>
+            </div>
+            <div class="card-hint">点击翻开</div>
+        </div>
+
+        <div class="tarot-card" data-index="1">
+            <div class="card-inner">
+                <div class="card-front">
+                    <div class="card-pattern">&#9789;</div>
+                    <div class="card-back-label">TAROT</div>
+                </div>
+                <div class="card-revealed">
+                    <div class="card-symbol">&#9733;</div>
+                    <div class="card-name">星星</div>
+                    <div class="card-meaning">你心里想的那个人<br>也在想着你</div>
+                </div>
+            </div>
+            <div class="card-hint">点击翻开</div>
+        </div>
+
+        <div class="tarot-card" data-index="2">
+            <div class="card-inner">
+                <div class="card-front">
+                    <div class="card-pattern">&#9790;</div>
+                    <div class="card-back-label">TAROT</div>
+                </div>
+                <div class="card-revealed">
+                    <div class="card-symbol">&#9829;</div>
+                    <div class="card-name">命运之轮</div>
+                    <div class="card-meaning">命中注定的相遇<br>不是偶然，是安排</div>
+                </div>
+            </div>
+            <div class="card-hint">点击翻开</div>
+        </div>
+    </div>
+
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-card">
+            <div class="result-symbol">&#10084;</div>
+            <div class="result-title">命运启示</div>
+            <div class="result-text">
+                三张牌都指向同一个答案——<br>
+                你喜欢的那个人，<br>
+                远在天边，近在眼前。
+            </div>
+            <div class="result-confession">我喜欢你</div>
+        </div>
+    </div>
+
+    <script>
+        const cards = document.querySelectorAll('.tarot-card');
+        const resultOverlay = document.getElementById('resultOverlay');
+        let flippedCount = 0;
+
+        cards.forEach(card => {
+            card.addEventListener('click', () => {
+                if (card.classList.contains('flipped')) return;
+                card.classList.add('flipped');
+                card.querySelector('.card-hint').textContent = '';
+                flippedCount++;
+                if (flippedCount === cards.length) {
+                    setTimeout(() => resultOverlay.classList.add('visible'), 1200);
+                }
+            });
+        });
+
+        resultOverlay.addEventListener('click', (e) => {
+            if (e.target === resultOverlay) resultOverlay.classList.remove('visible');
+        });
+    </script>
+</body>
+</html>

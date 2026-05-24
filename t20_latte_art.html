@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>咖啡拉花</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; overflow: hidden;
+            background: linear-gradient(180deg, #3e2723, #4e342e, #5d4037);
+            font-family: 'Georgia', 'Noto Serif SC', serif;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; }
+
+        .coffee-title {
+            font-size: clamp(18px, 4vw, 28px); color: rgba(255,255,255,0.7);
+            letter-spacing: 4px; margin-bottom: 8px;
+        }
+        .coffee-hint {
+            font-size: 13px; color: rgba(255,255,255,0.3);
+            letter-spacing: 2px; margin-bottom: 30px;
+        }
+
+        .cup-container {
+            position: relative; width: min(300px, 70vw); height: min(300px, 70vw);
+        }
+
+        .cup {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: radial-gradient(circle at 40% 35%, #5d4037, #3e2723);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255,255,255,0.1);
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; position: relative;
+        }
+
+        .latte-canvas { position: absolute; inset: 0; border-radius: 50%; }
+        .cup-rim { position: absolute; inset: 8px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.08); }
+
+        .steam-container {
+            position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px;
+        }
+        .steam {
+            width: 3px; height: 25px; background: rgba(255,255,255,0.1);
+            border-radius: 50%; animation: steamRise 2s ease-in-out infinite;
+        }
+        .steam:nth-child(2) { animation-delay: 0.5s; height: 30px; }
+        .steam:nth-child(3) { animation-delay: 1s; height: 20px; }
+        @keyframes steamRise {
+            0%{transform:translateY(0) scaleX(1);opacity:0.15;}
+            50%{transform:translateY(-20px) scaleX(2);opacity:0.05;}
+            100%{transform:translateY(-40px) scaleX(3);opacity:0;}
+        }
+
+        .saucer {
+            position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+            width: 120%; height: 30px;
+            background: radial-gradient(ellipse, #8d6e63, #5d4037);
+            border-radius: 50%; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .pour-btn {
+            margin-top: 50px; padding: 12px 36px;
+            font-size: clamp(14px, 3vw, 18px); letter-spacing: 3px; color: #fff;
+            background: linear-gradient(135deg, #8d6e63, #6d4c41);
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 25px;
+            cursor: pointer; transition: all 0.3s;
+        }
+        .pour-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+
+        .heart-reveal {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(0,0,0,0.85);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 1s ease;
+        }
+        .heart-reveal.visible { opacity: 1; pointer-events: auto; }
+
+        .reveal-heart {
+            font-size: clamp(60px, 15vw, 100px);
+            opacity: 0; transform: scale(0);
+            transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s;
+        }
+        .heart-reveal.visible .reveal-heart { opacity: 1; transform: scale(1); }
+
+        .reveal-text {
+            font-size: clamp(20px, 5vw, 36px); color: #fff;
+            letter-spacing: 6px; margin-top: 20px;
+            opacity: 0; transform: translateY(20px);
+            transition: all 1.5s ease 1s;
+        }
+        .heart-reveal.visible .reveal-text { opacity: 1; transform: translateY(0); }
+
+        .reveal-sub {
+            font-size: clamp(14px, 3vw, 18px); color: rgba(255,255,255,0.5);
+            letter-spacing: 3px; margin-top: 12px;
+            opacity: 0; transition: opacity 2s ease 1.5s;
+        }
+        .heart-reveal.visible .reveal-sub { opacity: 1; }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div class="coffee-title">暖冬咖啡</div>
+    <div class="coffee-hint">为你做一杯特别的拉花</div>
+
+    <div class="cup-container">
+        <div class="steam-container">
+            <div class="steam"></div>
+            <div class="steam"></div>
+            <div class="steam"></div>
+        </div>
+        <div class="cup">
+            <div class="cup-rim"></div>
+            <canvas class="latte-canvas" id="latteCanvas"></canvas>
+        </div>
+        <div class="saucer"></div>
+    </div>
+
+    <button class="pour-btn" id="pourBtn">开始拉花</button>
+
+    <div class="heart-reveal" id="heartReveal">
+        <div class="reveal-heart">&#10084;</div>
+        <div class="reveal-text">这杯咖啡只属于你</div>
+        <div class="reveal-sub">就像我的心，只为你跳动</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('latteCanvas');
+        const ctx = canvas.getContext('2d');
+        const pourBtn = document.getElementById('pourBtn');
+        const heartReveal = document.getElementById('heartReveal');
+        let pouring = false;
+
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * 2;
+            canvas.height = rect.height * 2;
+            ctx.scale(2, 2);
+            drawCoffee();
+        }
+
+        function drawCoffee() {
+            const w = canvas.offsetWidth;
+            const cx = w / 2, cy = w / 2, r = w * 0.42;
+            const grad = ctx.createRadialGradient(cx - r*0.2, cy - r*0.2, 0, cx, cy, r);
+            grad.addColorStop(0, '#6d4c41'); grad.addColorStop(0.5, '#4e342e');
+            grad.addColorStop(1, '#3e2723');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+        }
+
+        function drawLatteHeart(progress) {
+            const w = canvas.offsetWidth;
+            const cx = w / 2, cy = w / 2, size = w * 0.25;
+            ctx.strokeStyle = `rgba(255, 248, 240, ${progress * 0.8})`;
+            ctx.lineWidth = 3; ctx.lineCap = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy + size * 0.6);
+            ctx.bezierCurveTo(cx - size*1.2, cy + size*0.2, cx - size*0.8, cy - size*0.8, cx, cy - size*0.3);
+            ctx.bezierCurveTo(cx + size*0.8, cy - size*0.8, cx + size*1.2, cy + size*0.2, cx, cy + size*0.6);
+            ctx.stroke();
+
+            if (progress > 0.5) {
+                ctx.fillStyle = `rgba(255, 248, 240, ${(progress - 0.5) * 0.4})`;
+                ctx.fill();
+            }
+
+            if (progress > 0.7) {
+                ctx.strokeStyle = `rgba(255, 248, 240, ${(progress - 0.7) * 0.5})`;
+                ctx.lineWidth = 1.5;
+                for (let i = 0; i < 3; i++) {
+                    const angle = (Math.PI*2/3)*i;
+                    ctx.beginPath();
+                    ctx.arc(cx + Math.cos(angle)*size*0.5, cy + Math.sin(angle)*size*0.3, 5+i*3, 0, Math.PI*2);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        resize();
+        window.addEventListener('resize', resize);
+
+        pourBtn.addEventListener('click', () => {
+            if (pouring) return;
+            pouring = true;
+            pourBtn.disabled = true;
+            pourBtn.textContent = '拉花中...';
+
+            let progress = 0;
+            function animatePour() {
+                progress = Math.min(progress + 0.01, 1);
+                drawCoffee();
+                drawLatteHeart(progress);
+                if (progress < 1) {
+                    requestAnimationFrame(animatePour);
+                } else {
+                    pourBtn.textContent = '完成';
+                    setTimeout(() => heartReveal.classList.add('visible'), 1000);
+                }
+            }
+            animatePour();
+        });
+
+        heartReveal.addEventListener('click', (e) => {
+            if (e.target === heartReveal) heartReveal.classList.remove('visible');
+        });
+    </script>
+</body>
+</html>

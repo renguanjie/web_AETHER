@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOVE-1314 登机牌</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            font-family: 'PingFang SC', 'Helvetica Neue', sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            perspective: 1200px;
+        }
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; }
+
+        .boarding-pass {
+            width: min(600px, 92vw); background: #fafafa;
+            border-radius: 16px; box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            transform-style: preserve-3d;
+            transition: transform 1s cubic-bezier(0.4,0,0.2,1);
+            position: relative; cursor: pointer;
+            opacity: 0; transform: rotateX(10deg) translateY(30px);
+            animation: passIn 1.2s ease forwards 0.5s;
+        }
+        @keyframes passIn { to { opacity:1; transform:rotateX(0) translateY(0); } }
+        .boarding-pass:hover { transform: rotateY(180deg); }
+
+        .pass-front { backface-visibility: hidden; }
+        .pass-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 28px; background: linear-gradient(135deg, #1a237e, #283593);
+            color: #fff; border-radius: 16px 16px 0 0;
+        }
+        .pass-airline { font-size: 14px; letter-spacing: 3px; font-weight: 300; }
+        .pass-class { font-size: 11px; padding: 4px 12px; border: 1px solid rgba(255,255,255,0.3); border-radius: 12px; letter-spacing: 2px; }
+
+        .pass-body { padding: 25px 28px; }
+        .pass-route { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .pass-city { text-align: center; }
+        .pass-city .code { font-size: clamp(32px, 8vw, 52px); font-weight: 700; color: #1a237e; letter-spacing: 2px; }
+        .pass-city .name { font-size: 13px; color: #999; letter-spacing: 1px; margin-top: 4px; }
+        .pass-route-line { flex: 1; display: flex; flex-direction: column; align-items: center; margin: 0 15px; }
+        .route-icon { font-size: 24px; color: #1a237e; }
+        .route-dash { width: 100%; height: 2px; background: linear-gradient(90deg, #1a237e, transparent); margin: 6px 0; }
+        .route-label { font-size: 11px; color: #bbb; letter-spacing: 1px; }
+
+        .pass-details { display: grid; grid-template-columns: repeat(3,1fr); gap: 15px; margin-bottom: 20px; }
+        .pass-detail label { display: block; font-size: 10px; color: #bbb; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+        .pass-detail span { font-size: 15px; color: #333; font-weight: 600; }
+
+        .pass-divider { border: none; border-top: 2px dashed #e0e0e0; margin: 15px 0; position: relative; }
+        .pass-divider::before, .pass-divider::after { content: ''; position: absolute; top: -8px; width: 16px; height: 16px; border-radius: 50%; background: linear-gradient(135deg, #1a1a2e, #16213e); }
+        .pass-divider::before { left: -22px; } .pass-divider::after { right: -22px; }
+
+        .pass-barcode { display: flex; gap: 2px; justify-content: center; padding: 10px 0; }
+        .pass-barcode div { width: 2px; height: 35px; background: #333; }
+        .pass-barcode div:nth-child(odd) { width: 1px; }
+        .pass-barcode div:nth-child(3n) { width: 3px; }
+        .pass-barcode div:nth-child(5n) { height: 28px; }
+
+        .pass-hint { text-align: center; font-size: 12px; color: #ccc; padding: 12px 0 20px; letter-spacing: 1px; }
+
+        .pass-back {
+            position: absolute; inset: 0; backface-visibility: hidden;
+            background: #fff; border-radius: 16px; padding: 40px 35px;
+            transform: rotateY(180deg);
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .pass-back-title { font-size: clamp(20px, 5vw, 30px); color: #1a237e; font-weight: 300; letter-spacing: 4px; margin-bottom: 25px; text-align: center; }
+        .pass-back-text { font-size: clamp(14px, 3vw, 17px); line-height: 2; color: #555; letter-spacing: 1px; }
+        .pass-back-text p { margin-bottom: 15px; }
+        .pass-signature { text-align: right; margin-top: 20px; color: #1a237e; font-size: 18px; font-style: italic; }
+
+        .particle {
+            position: fixed; width: 3px; height: 3px;
+            background: rgba(255,255,255,0.2); border-radius: 50%;
+            pointer-events: none; animation: drift 8s ease-in-out infinite;
+        }
+        @keyframes drift { 0%,100%{transform:translateY(0) translateX(0);opacity:0.2;} 50%{transform:translateY(-60px) translateX(20px);opacity:0.5;} }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div class="boarding-pass">
+        <div class="pass-front">
+            <div class="pass-header">
+                <span class="pass-airline">&#9992; AETHER AIRLINES</span>
+                <span class="pass-class">FIRST CLASS</span>
+            </div>
+            <div class="pass-body">
+                <div class="pass-route">
+                    <div class="pass-city"><div class="code">NOW</div><div class="name">现在</div></div>
+                    <div class="pass-route-line">
+                        <div class="route-icon">&#9992;</div>
+                        <div class="route-dash"></div>
+                        <div class="route-label">LOVE-1314</div>
+                    </div>
+                    <div class="pass-city"><div class="code">U</div><div class="name">有你的未来</div></div>
+                </div>
+                <div class="pass-details">
+                    <div class="pass-detail"><label>日期</label><span id="passDate">2026.05.22</span></div>
+                    <div class="pass-detail"><label>登机口</label><span>GATE 520</span></div>
+                    <div class="pass-detail"><label>座位</label><span>SEAT &#10084;</span></div>
+                    <div class="pass-detail"><label>乘客</label><span>我们</span></div>
+                    <div class="pass-detail"><label>登机时间</label><span>立即出发</span></div>
+                    <div class="pass-detail"><label>行李</label><span>一颗真心</span></div>
+                </div>
+                <hr class="pass-divider">
+                <div class="pass-barcode" id="barcode"></div>
+                <div class="pass-hint">&#8592; 悬停翻转，阅读背面 &rarr;</div>
+            </div>
+        </div>
+        <div class="pass-back">
+            <div class="pass-back-title">致旅客</div>
+            <div class="pass-back-text">
+                <p>亲爱的旅客：</p>
+                <p>欢迎搭乘本次航班。这是一趟单程旅行，目的地是——有你的未来。</p>
+                <p>飞行时间：一生一世。<br>机上服务：全心全意。<br>行李额度：装满对你的爱。</p>
+                <p>请在登机前确认您的心跳频率与我同步。如有不同步，本航班将自动调整为您的频率。</p>
+                <p>祝您旅途愉快。</p>
+            </div>
+            <div class="pass-signature">—— 永远为你服务的机长</div>
+        </div>
+    </div>
+
+    <script>
+        const d = new Date();
+        document.getElementById('passDate').textContent = d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0');
+        const bc = document.getElementById('barcode');
+        for (let i = 0; i < 40; i++) { const l = document.createElement('div'); bc.appendChild(l); }
+        for (let i = 0; i < 15; i++) {
+            const p = document.createElement('div'); p.className = 'particle';
+            p.style.cssText = `left:${Math.random()*100}vw;top:${Math.random()*100}vh;width:${2+Math.random()*3}px;height:${2+Math.random()*3}px;animation-delay:${Math.random()*8}s;animation-duration:${6+Math.random()*6}s;`;
+            document.body.appendChild(p);
+        }
+    </script>
+</body>
+</html>

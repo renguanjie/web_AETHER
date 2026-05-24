@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>樱花树下的告白</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; overflow-x: hidden;
+            background: linear-gradient(135deg, #fce4ec, #fff, #f8bbd0);
+            font-family: 'PingFang SC', 'Microsoft YaHei', serif;
+            color: #5d4037;
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: #D4AF37; text-decoration: none; font-size: 14px;
+            padding: 8px 16px; border: 1px solid rgba(212,175,55,0.3);
+            border-radius: 20px; backdrop-filter: blur(8px);
+            transition: all 0.3s;
+        }
+        .back-btn:hover { background: rgba(212,175,55,0.15); }
+
+        .petal {
+            position: fixed; top: -20px;
+            width: 12px; height: 14px;
+            background: #ffb7c5;
+            border-radius: 50% 10% 50% 50%;
+            pointer-events: none; z-index: 1; opacity: 0.8;
+            box-shadow: 0 0 4px rgba(255,183,197,0.4);
+            animation: sakuraFall var(--fall-dur, 6s) linear infinite;
+            animation-delay: var(--fall-delay, 0s);
+        }
+        @keyframes sakuraFall {
+            0% { top: -20px; transform: translateX(0) rotate(0deg); opacity: 0.8; }
+            25% { transform: translateX(30px) rotate(90deg); }
+            50% { transform: translateX(-20px) rotate(180deg); }
+            75% { transform: translateX(40px) rotate(270deg); }
+            100% { top: 105vh; transform: translateX(10px) rotate(360deg); opacity: 0; }
+        }
+
+        #gallery {
+            min-height: 100vh; display: flex;
+            justify-content: center; align-items: center;
+            padding: 40px 20px;
+        }
+        .polaroid-stack {
+            position: relative; width: 320px; max-width: 85vw;
+        }
+        .polaroid {
+            position: absolute; inset: 0;
+            background: #fff; border-radius: 8px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            padding: 15px 15px 60px;
+            transition: all 0.8s cubic-bezier(0.4,0,0.2,1);
+            opacity: 0; transform: scale(0.9);
+        }
+        .polaroid.active { opacity: 1; transform: scale(1); z-index: 5; }
+        .polaroid .photo {
+            width: 100%; aspect-ratio: 4/3;
+            border-radius: 4px; overflow: hidden;
+        }
+        .polaroid .caption {
+            font-size: 14px; text-align: center;
+            margin-top: 12px; color: #8d6e63;
+            font-style: italic; letter-spacing: 1px;
+        }
+        .photo-1 { background: linear-gradient(135deg, #fce4ec, #f8bbd0, #f48fb1); }
+        .photo-2 { background: linear-gradient(135deg, #e8f5e9, #c8e6c9, #a5d6a7); }
+        .photo-3 { background: linear-gradient(135deg, #e3f2fd, #bbdefb, #90caf9); }
+
+        .nav-dots {
+            position: absolute; bottom: -40px; left: 50%;
+            transform: translateX(-50%); display: flex; gap: 10px;
+        }
+        .dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: #e0b0b8; cursor: pointer;
+            transition: all 0.3s; border: none;
+        }
+        .dot.active { background: #e91e63; transform: scale(1.3); }
+
+        #question {
+            min-height: 60vh; display: flex;
+            flex-direction: column;
+            justify-content: center; align-items: center;
+            text-align: center; padding: 40px 20px;
+        }
+        #question h2 {
+            font-size: clamp(22px, 5vw, 36px);
+            font-weight: 300; letter-spacing: 3px;
+            margin-bottom: 40px; color: #ad1457;
+        }
+        .btn-group {
+            position: relative; display: flex; gap: 30px;
+            min-height: 60px; justify-content: center;
+        }
+        .btn-yes {
+            padding: 14px 40px; border: none; border-radius: 50px;
+            background: linear-gradient(135deg, #ff6b9d, #e91e63);
+            color: #fff; font-size: 18px; cursor: pointer;
+            letter-spacing: 3px; transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(233,30,99,0.3);
+        }
+        .btn-yes:hover { transform: scale(1.05); }
+        .btn-no {
+            padding: 14px 40px; border-radius: 50px;
+            background: #f5f5f5; color: #999;
+            font-size: 16px; letter-spacing: 2px;
+            cursor: pointer; transition: transform 0.25s ease-out;
+            border: 1px solid #e0e0e0;
+            position: absolute; white-space: nowrap;
+        }
+
+        #celebration {
+            position: fixed; inset: 0; z-index: 50;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: rgba(255,236,240,0.95);
+            backdrop-filter: blur(10px);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.8s;
+        }
+        #celebration.active { opacity: 1; pointer-events: auto; }
+        #celebration h1 {
+            font-size: clamp(28px, 7vw, 52px);
+            font-weight: 300; color: #e91e63;
+            letter-spacing: 5px; margin-bottom: 20px;
+        }
+        #celebration p {
+            font-size: clamp(16px, 3vw, 22px);
+            color: #ad1457; letter-spacing: 2px;
+        }
+        .celebration-heart {
+            font-size: 80px; animation: celebPulse 0.6s infinite;
+        }
+        @keyframes celebPulse {
+            0%,100%{ transform: scale(1); }
+            50%{ transform: scale(1.2); }
+        }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div id="gallery">
+        <div class="polaroid-stack" id="stack">
+            <div class="polaroid active" data-idx="0">
+                <div class="photo photo-1"></div>
+                <div class="caption">第一次相遇，心跳漏了一拍</div>
+            </div>
+            <div class="polaroid" data-idx="1">
+                <div class="photo photo-2"></div>
+                <div class="caption">和你在一起的每一天，都像春天一样温暖</div>
+            </div>
+            <div class="polaroid" data-idx="2">
+                <div class="photo photo-3"></div>
+                <div class="caption">想把所有美好的瞬间，都和你一起分享</div>
+            </div>
+            <div class="nav-dots">
+                <button class="dot active" data-idx="0"></button>
+                <button class="dot" data-idx="1"></button>
+                <button class="dot" data-idx="2"></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="question">
+        <h2>你愿意做我的专属小太阳吗？</h2>
+        <div class="btn-group" id="btnGroup">
+            <button class="btn-yes" id="btnYes">非常愿意！</button>
+            <button class="btn-no" id="btnNo">打死不愿意</button>
+        </div>
+    </div>
+
+    <div id="celebration">
+        <div class="celebration-heart">&#10084;</div>
+        <h1>我们在一起啦！</h1>
+        <p>从今以后，每一天都是我们的恋爱纪念日</p>
+    </div>
+
+    <script>
+        const isMobile = window.innerWidth < 768;
+
+        // Sakura petals
+        const petalCount = isMobile ? 20 : 45;
+        for (let i = 0; i < petalCount; i++) {
+            const petal = document.createElement('div');
+            petal.className = 'petal';
+            petal.style.left = Math.random() * 100 + 'vw';
+            petal.style.setProperty('--fall-dur', (5 + Math.random() * 5) + 's');
+            petal.style.setProperty('--fall-delay', (-Math.random() * 10) + 's');
+            petal.style.width = (8 + Math.random() * 8) + 'px';
+            petal.style.height = (10 + Math.random() * 8) + 'px';
+            const colors = ['#ffb7c5','#ff99aa','#ffc0cb','#f8bbd0'];
+            petal.style.background = colors[Math.floor(Math.random()*colors.length)];
+            document.body.appendChild(petal);
+        }
+
+        // Slideshow
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.polaroid');
+        const dots = document.querySelectorAll('.dot');
+
+        function goToSlide(idx) {
+            slides[currentSlide].classList.remove('active');
+            dots[currentSlide].classList.remove('active');
+            currentSlide = idx;
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+        }
+        dots.forEach(d => d.addEventListener('click', () => goToSlide(+d.dataset.idx)));
+        setInterval(() => goToSlide((currentSlide + 1) % slides.length), 4000);
+
+        // No button evasion
+        const btnNo = document.getElementById('btnNo');
+        btnNo.addEventListener('mousemove', (e) => {
+            const rect = btnNo.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+            if (dist < (isMobile ? 60 : 100)) {
+                btnNo.style.position = 'fixed';
+                btnNo.style.left = Math.random() * (window.innerWidth - rect.width - 20) + 'px';
+                btnNo.style.top = Math.random() * (window.innerHeight - rect.height - 20) + 'px';
+                btnNo.style.transform = 'none';
+            }
+        });
+        btnNo.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            btnNo.style.position = 'fixed';
+            btnNo.style.left = Math.random() * (window.innerWidth - btnNo.offsetWidth - 20) + 'px';
+            btnNo.style.top = Math.random() * (window.innerHeight - btnNo.offsetHeight - 20) + 'px';
+            btnNo.style.transform = 'none';
+        });
+
+        // Yes
+        document.getElementById('btnYes').addEventListener('click', () => {
+            document.getElementById('celebration').classList.add('active');
+        });
+    </script>
+</body>
+</html>

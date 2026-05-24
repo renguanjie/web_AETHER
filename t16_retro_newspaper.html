@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>头条新闻</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; background: #2c2c2c;
+            font-family: 'Georgia', 'Noto Serif SC', serif;
+            display: flex; justify-content: center; align-items: flex-start;
+            padding: 30px 15px;
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; }
+
+        .newspaper {
+            width: min(700px, 100%); background: #f5f0e8;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            padding: clamp(20px, 4vw, 40px);
+            opacity: 0; transform: translateY(30px);
+            transition: all 1s ease;
+        }
+        .newspaper.visible { opacity: 1; transform: translateY(0); }
+
+        .paper-header {
+            text-align: center; border-bottom: 3px double #333;
+            padding-bottom: 15px; margin-bottom: 20px;
+        }
+        .paper-name {
+            font-size: clamp(28px, 7vw, 52px); font-weight: 900;
+            letter-spacing: 8px; color: #1a1a1a;
+        }
+        .paper-date { font-size: 12px; color: #666; letter-spacing: 3px; margin-top: 8px; }
+        .paper-edition { font-size: 11px; color: #888; letter-spacing: 2px; margin-top: 4px; }
+
+        .headline {
+            text-align: center; padding: 20px 0;
+            border-bottom: 2px solid #333; margin-bottom: 20px;
+        }
+        .headline-main {
+            font-size: clamp(24px, 6vw, 42px); font-weight: 900;
+            line-height: 1.3; color: #1a1a1a; letter-spacing: 2px;
+        }
+        .headline-sub {
+            font-size: clamp(14px, 3vw, 20px); color: #555;
+            font-style: italic; margin-top: 10px; letter-spacing: 1px;
+        }
+
+        .columns { column-count: 2; column-gap: 30px; column-rule: 1px solid #ccc; }
+        @media (max-width: 480px) { .columns { column-count: 1; } }
+
+        .article { margin-bottom: 20px; break-inside: avoid; }
+        .article h3 {
+            font-size: clamp(14px, 3vw, 18px); font-weight: 700;
+            color: #1a1a1a; margin-bottom: 8px; letter-spacing: 1px;
+        }
+        .article p {
+            font-size: clamp(12px, 2.5vw, 14px); color: #444;
+            line-height: 1.8; text-align: justify; margin-bottom: 8px;
+        }
+        .article .drop-cap::first-letter {
+            font-size: 3em; float: left; line-height: 0.8;
+            margin-right: 6px; color: #8b0000; font-weight: 700;
+        }
+
+        .photo-placeholder {
+            width: 100%; aspect-ratio: 16/10;
+            background: linear-gradient(135deg, #d4c5a9, #c9b896);
+            border: 1px solid #aaa; margin: 15px 0;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 40px; color: #8b7355;
+        }
+        .photo-caption {
+            font-size: 11px; color: #888; font-style: italic;
+            text-align: center; margin-top: -10px; margin-bottom: 15px;
+        }
+
+        .footer-line {
+            border-top: 3px double #333; padding-top: 15px; margin-top: 25px;
+            text-align: center;
+        }
+        .footer-text {
+            font-size: clamp(16px, 4vw, 24px); color: #8b0000;
+            font-weight: 700; letter-spacing: 3px;
+            opacity: 0; transform: translateY(10px);
+            transition: all 1.5s ease;
+        }
+        .footer-text.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div class="newspaper" id="newspaper">
+        <div class="paper-header">
+            <div class="paper-name">恋爱日报</div>
+            <div class="paper-date" id="paperDate"></div>
+            <div class="paper-edition">今日头版 · 独家报道</div>
+        </div>
+
+        <div class="headline">
+            <div class="headline-main">惊！有人暗恋你已久</div>
+            <div class="headline-sub">知情人士透露：当事人已准备表白</div>
+        </div>
+
+        <div class="columns">
+            <div class="article">
+                <h3>本报讯</h3>
+                <p class="drop-cap">据可靠消息来源，在过去的一段时间里，某人一直在默默地关注着你的一举一动。该人士承认，每次看到你都会心跳加速，但至今未能鼓起勇气当面表白。</p>
+                <p>本报记者独家获悉，该人士已经筹备了一份特别的告白计划，预计将在近期实施。</p>
+            </div>
+
+            <div class="article">
+                <div class="photo-placeholder">&#9829;</div>
+                <div class="photo-caption">图：某人的真心（实拍）</div>
+            </div>
+
+            <div class="article">
+                <h3>专家分析</h3>
+                <p>情感专家指出："暗恋是最美好的感情状态之一。当暗恋者终于决定开口时，被暗恋者通常也会感到惊喜而非惊讶。"</p>
+            </div>
+
+            <div class="article">
+                <h3>天气</h3>
+                <p>今日宜表白，忌犹豫。气温：心动温度。风向：东南偏你。</p>
+            </div>
+
+            <div class="article">
+                <h3>读者来信</h3>
+                <p>"我喜欢你。"——这是本报记者截至今日收到最简短也最真诚的投稿。全文完，但爱意未尽。</p>
+            </div>
+        </div>
+
+        <div class="footer-line">
+            <div class="footer-text" id="footerText">本报唯一真实新闻：我喜欢你</div>
+        </div>
+    </div>
+
+    <script>
+        const d = new Date();
+        document.getElementById('paperDate').textContent =
+            d.getFullYear()+'年'+String(d.getMonth()+1).padStart(2,'0')+'月'+String(d.getDate()).padStart(2,'0')+'日 · 第520期';
+
+        const newspaper = document.getElementById('newspaper');
+        const footerText = document.getElementById('footerText');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.classList.add('visible');
+                    setTimeout(() => footerText.classList.add('visible'), 2000);
+                }
+            });
+        }, { threshold: 0.1 });
+        observer.observe(newspaper);
+    </script>
+</body>
+</html>

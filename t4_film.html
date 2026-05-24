@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我们的电影</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a; color: #fff;
+            font-family: 'Georgia', 'Noto Serif SC', serif; overflow-x: hidden;
+        }
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; }
+
+        .film-intro {
+            height: 100vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center; position: relative;
+        }
+        .film-intro h1 {
+            font-size: clamp(28px, 7vw, 56px); font-weight: 300; letter-spacing: 8px;
+            color: rgba(255,255,255,0.8); text-shadow: 0 0 30px rgba(255,255,255,0.1);
+        }
+        .film-intro p {
+            font-size: clamp(14px, 3vw, 18px); color: rgba(255,255,255,0.4);
+            letter-spacing: 4px; margin-top: 20px;
+        }
+        .scroll-hint {
+            position: absolute; bottom: 40px; font-size: 13px;
+            color: rgba(255,255,255,0.3); letter-spacing: 2px;
+            animation: scrollPulse 2s infinite;
+        }
+        @keyframes scrollPulse { 0%,100%{transform:translateY(0);opacity:0.3;} 50%{transform:translateY(8px);opacity:0.6;} }
+
+        .film-strip { position: relative; padding: 60px 0 100px; }
+        .film-row {
+            display: flex; align-items: stretch; margin-bottom: 60px;
+            padding: 0 5vw; gap: 40px;
+        }
+        .film-row.reverse { flex-direction: row-reverse; }
+
+        .film-frame {
+            flex: 0 0 min(300px, 70vw); position: relative;
+            background: #1a1a1a; border: 3px solid #2a2a2a; border-radius: 4px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5); overflow: hidden;
+            opacity: 0; transform: translateY(40px);
+            transition: all 1s cubic-bezier(0.25,0.46,0.45,0.94);
+        }
+        .film-frame.visible { opacity: 1; transform: translateY(0); }
+
+        .film-frame::before, .film-frame::after {
+            content: ''; position: absolute; top: 0; bottom: 0; width: 20px; z-index: 2;
+            background-image: radial-gradient(circle, #333 3px, transparent 3px);
+            background-size: 20px 28px; background-repeat: repeat-y;
+        }
+        .film-frame::before { left: 4px; } .film-frame::after { right: 4px; }
+
+        .frame-image { width: 100%; aspect-ratio: 4/3; display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; }
+        .frame-image .gradient-bg { position: absolute; inset: 0; }
+        .frame-image .frame-icon { font-size: 48px; z-index: 1; opacity: 0.6; }
+        .frame-caption {
+            padding: 16px 28px; font-family: 'Courier New', monospace;
+            font-size: 13px; color: rgba(255,255,255,0.6); letter-spacing: 1px;
+        }
+
+        .narration {
+            flex: 1; display: flex; flex-direction: column; justify-content: center;
+            opacity: 0; transform: translateX(30px);
+            transition: all 1s cubic-bezier(0.25,0.46,0.45,0.94) 0.3s;
+        }
+        .film-row.reverse .narration { transform: translateX(-30px); }
+        .narration.visible { opacity: 1; transform: translateX(0); }
+        .narration-text {
+            font-size: clamp(16px, 3vw, 22px); font-weight: 300; line-height: 1.8;
+            color: rgba(255,255,255,0.7); letter-spacing: 1px;
+        }
+        .narration-scene {
+            font-size: 12px; color: rgba(255,255,255,0.3); letter-spacing: 3px;
+            text-transform: uppercase; margin-bottom: 12px;
+        }
+
+        .film-grain {
+            position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 256px; animation: grainShift 0.5s steps(1) infinite;
+        }
+        @keyframes grainShift { 0%{transform:translate(0,0);} 25%{transform:translate(-5%,5%);} 50%{transform:translate(5%,-5%);} 75%{transform:translate(-5%,-5%);} 100%{transform:translate(5%,5%);} }
+
+        .final-scene {
+            min-height: 80vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center; padding: 80px 20px;
+        }
+        .final-text {
+            font-size: clamp(24px, 6vw, 48px); font-weight: 300; letter-spacing: 6px;
+            color: rgba(255,255,255,0.8); opacity: 0; transform: translateY(30px);
+            transition: all 1.5s ease;
+        }
+        .final-text.visible { opacity: 1; transform: translateY(0); }
+        .final-sub {
+            font-size: clamp(14px, 3vw, 20px); color: rgba(255,255,255,0.4);
+            letter-spacing: 3px; margin-top: 20px; opacity: 0; transition: opacity 2s ease 0.8s;
+        }
+        .final-sub.visible { opacity: 1; }
+
+        .vignette {
+            position: fixed; inset: 0; z-index: 49; pointer-events: none;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+        }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+    <div class="film-grain"></div>
+    <div class="vignette"></div>
+
+    <div class="film-intro">
+        <h1>我们的电影</h1>
+        <p>A LOVE STORY</p>
+        <div class="scroll-hint">向下滚动，翻开我们的故事 &#8595;</div>
+    </div>
+
+    <div class="film-strip">
+        <div class="film-row">
+            <div class="film-frame" data-anim>
+                <div class="frame-image">
+                    <div class="gradient-bg" style="background:linear-gradient(135deg,#fce4ec,#f8bbd0,#f48fb1);"></div>
+                    <div class="frame-icon">&#127800;</div>
+                </div>
+                <div class="frame-caption">SCENE 01 — 初见</div>
+            </div>
+            <div class="narration" data-anim>
+                <div class="narration-scene">Scene 01</div>
+                <div class="narration-text">第一次见到你，<br>是在一个不经意的午后。<br>阳光刚好，你笑得刚好。</div>
+            </div>
+        </div>
+
+        <div class="film-row reverse">
+            <div class="film-frame" data-anim>
+                <div class="frame-image">
+                    <div class="gradient-bg" style="background:linear-gradient(135deg,#e3f2fd,#bbdefb,#90caf9);"></div>
+                    <div class="frame-icon">&#9749;</div>
+                </div>
+                <div class="frame-caption">SCENE 02 — 聊天</div>
+            </div>
+            <div class="narration" data-anim>
+                <div class="narration-scene">Scene 02</div>
+                <div class="narration-text">后来我们开始聊天，<br>从早安到晚安，<br>每一句都舍不得结束。</div>
+            </div>
+        </div>
+
+        <div class="film-row">
+            <div class="film-frame" data-anim>
+                <div class="frame-image">
+                    <div class="gradient-bg" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9,#a5d6a7);"></div>
+                    <div class="frame-icon">&#127793;</div>
+                </div>
+                <div class="frame-caption">SCENE 03 — 约会</div>
+            </div>
+            <div class="narration" data-anim>
+                <div class="narration-scene">Scene 03</div>
+                <div class="narration-text">第一次约会，<br>紧张得手心都是汗。<br>但你牵起我手的那一刻，<br>一切都值得了。</div>
+            </div>
+        </div>
+
+        <div class="film-row reverse">
+            <div class="film-frame" data-anim>
+                <div class="frame-image">
+                    <div class="gradient-bg" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2,#ffcc80);"></div>
+                    <div class="frame-icon">&#127775;</div>
+                </div>
+                <div class="frame-caption">SCENE 04 — 日常</div>
+            </div>
+            <div class="narration" data-anim>
+                <div class="narration-scene">Scene 04</div>
+                <div class="narration-text">最平凡的日子，<br>因为有你，<br>变成了最珍贵的画面。</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="final-scene">
+        <div class="final-text" data-anim>全剧终？</div>
+        <div class="final-sub" data-anim>不，我们的故事才刚刚开始</div>
+    </div>
+
+    <script>
+        const animEls = document.querySelectorAll('[data-anim]');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+        }, { threshold: 0.2, rootMargin: '0px 0px -50px 0px' });
+        animEls.forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>

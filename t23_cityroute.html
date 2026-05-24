@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>城市轨迹寻星</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background: #0a0a12;
+            font-family: 'SF Mono', 'Fira Code', 'PingFang SC', sans-serif;
+        }
+        canvas { display: block; }
+
+        #hud {
+            position: absolute; top: 0; left: 0; right: 0;
+            padding: 16px 20px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            z-index: 5; pointer-events: none;
+        }
+        .hud-card {
+            background: rgba(10, 10, 20, 0.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 12px 16px;
+            backdrop-filter: blur(12px);
+        }
+        .hud-label {
+            font-size: 9px; color: #555; letter-spacing: 2px;
+            text-transform: uppercase; margin-bottom: 4px;
+        }
+        .hud-value { font-size: 14px; color: #fff; font-variant-numeric: tabular-nums; }
+        .hud-value.pink { color: #ff6b9d; }
+        .hud-value.blue { color: #4fc3f7; }
+
+        #route-info {
+            position: absolute; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 5; pointer-events: none;
+            text-align: center;
+            opacity: 0; transition: opacity 0.8s ease;
+        }
+        #route-info.visible { opacity: 1; }
+        .route-card {
+            background: rgba(10, 10, 20, 0.85);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; padding: 14px 24px;
+            backdrop-filter: blur(12px);
+        }
+        .route-card .dest { font-size: 16px; color: #fff; letter-spacing: 2px; }
+        .route-card .eta { font-size: 11px; color: #666; margin-top: 4px; letter-spacing: 1px; }
+
+        #start-screen {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 20;
+            background: radial-gradient(circle at center, rgba(10,10,18,0.95), rgba(5,5,10,0.98));
+        }
+        #start-screen.hidden { opacity: 0; pointer-events: none; transition: opacity 1s ease; }
+        .start-icon { font-size: 48px; margin-bottom: 20px; }
+        .start-title {
+            font-size: clamp(18px, 4vw, 28px);
+            color: #fff; letter-spacing: 4px; font-weight: 200; margin-bottom: 8px;
+        }
+        .start-sub {
+            font-size: 12px; color: #555; letter-spacing: 3px; margin-bottom: 30px;
+        }
+        #start-btn {
+            padding: 14px 40px;
+            background: transparent;
+            border: 1px solid rgba(79, 195, 247, 0.4);
+            border-radius: 30px;
+            color: #4fc3f7; font-size: 14px; letter-spacing: 3px;
+            cursor: pointer; font-family: inherit; transition: all 0.3s ease;
+        }
+        #start-btn:hover {
+            background: rgba(79, 195, 247, 0.1);
+            border-color: #4fc3f7;
+            box-shadow: 0 0 30px rgba(79, 195, 247, 0.2);
+        }
+
+        #arrival {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 30;
+            opacity: 0; pointer-events: none;
+            transition: opacity 1.2s ease;
+        }
+        #arrival.visible { opacity: 1; pointer-events: auto; }
+        .arrival-bg {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle at center, rgba(30,10,20,0.95), rgba(5,5,10,0.98));
+        }
+        .arrival-content { position: relative; z-index: 1; text-align: center; }
+        .arrival-pin {
+            font-size: clamp(40px, 10vw, 70px);
+            animation: pinBounce 1.5s ease-in-out infinite;
+        }
+        @keyframes pinBounce {
+            0%,100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+        .arrival-text {
+            font-size: clamp(16px, 4vw, 26px);
+            color: #fff; letter-spacing: 4px; font-weight: 200;
+            margin-top: 20px;
+            opacity: 0; animation: rise 1.5s ease 0.5s forwards;
+        }
+        .arrival-text .pink {
+            color: #ff6b9d;
+            text-shadow: 0 0 20px rgba(255,107,157,0.4);
+        }
+        .arrival-sub {
+            font-size: 11px; color: #555; letter-spacing: 3px;
+            margin-top: 14px;
+            opacity: 0; animation: rise 1.5s ease 1.5s forwards;
+        }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .hud-card { padding: 8px 12px; }
+            .hud-value { font-size: 12px; }
+            .route-card { padding: 10px 18px; }
+            .route-card .dest { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div id="hud">
+        <div class="hud-card">
+            <div class="hud-label">Destination</div>
+            <div class="hud-value pink">你的心里</div>
+        </div>
+        <div class="hud-card" style="text-align:right;">
+            <div class="hud-label">Distance</div>
+            <div class="hud-value blue" id="hud-dist">3.14 km</div>
+        </div>
+    </div>
+
+    <div id="route-info">
+        <div class="route-card">
+            <div class="dest">&#128205; 目的地：你的心里</div>
+            <div class="eta">预计 <span id="hud-eta">--</span></div>
+        </div>
+    </div>
+
+    <div id="start-screen">
+        <div class="start-icon">&#128663;</div>
+        <div class="start-title">城市轨迹寻星</div>
+        <div class="start-sub">跨越人海的派单，正在规划路线...</div>
+        <button id="start-btn">&#9654; 开始行程</button>
+    </div>
+
+    <div id="arrival">
+        <div class="arrival-bg"></div>
+        <div class="arrival-content">
+            <div class="arrival-pin">&#128205;</div>
+            <div class="arrival-text">跨越人海的派单<br>我已到达<span class="pink">你的心里</span></div>
+            <div class="arrival-sub">TRIP COMPLETE — DESTINATION REACHED</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let W, H, dpr;
+        const ROAD_SPACING = 60;
+        const DRIVE_DURATION = 7000;
+
+        let roads = [], path = [], totalDistance = 0;
+        let carProgress = 0, carX = 0, carY = 0, carAngle = 0;
+        let driving = false, arrived = false, driveStart = 0;
+        let heartParticles = [];
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            W = window.innerWidth; H = window.innerHeight;
+            canvas.width = W * dpr; canvas.height = H * dpr;
+            canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            buildRoads();
+        }
+        window.addEventListener('resize', resize);
+
+        function buildRoads() {
+            roads = [];
+            for (let y = 0; y < H; y += ROAD_SPACING) roads.push({ x1: 0, y1: y, x2: W, y2: y });
+            for (let x = 0; x < W; x += ROAD_SPACING) roads.push({ x1: x, y1: 0, x2: x, y2: H });
+            roads.push({ x1: 0, y1: H, x2: W, y2: 0 });
+            roads.push({ x1: W * 0.3, y1: H, x2: W * 0.7, y2: 0 });
+            roads.push({ x1: W * 0.5, y1: H * 0.3, x2: 0, y2: H * 0.7 });
+            roads.push({ x1: W * 0.5, y1: H * 0.3, x2: W, y2: H * 0.7 });
+        }
+
+        function buildPath() {
+            path = [];
+            const margin = 40, cx = W / 2;
+            const sx = margin, sy = H - margin;
+            const wp = [
+                { x: sx, y: sy },
+                { x: sx, y: sy - ROAD_SPACING * 2 },
+                { x: sx + ROAD_SPACING * 3, y: sy - ROAD_SPACING * 2 },
+                { x: sx + ROAD_SPACING * 3, y: sy - ROAD_SPACING * 4 },
+                { x: cx - ROAD_SPACING, y: sy - ROAD_SPACING * 4 },
+                { x: cx - ROAD_SPACING, y: H / 2 + ROAD_SPACING * 2 },
+                { x: cx + ROAD_SPACING * 2, y: H / 2 + ROAD_SPACING * 2 },
+                { x: cx + ROAD_SPACING * 2, y: H / 2 - ROAD_SPACING },
+                { x: cx, y: H / 2 },
+            ];
+            for (let i = 0; i < wp.length - 1; i++) {
+                const a = wp[i], b = wp[i + 1];
+                for (let t = 0; t <= 1; t += 1 / 40) {
+                    path.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+                }
+            }
+            totalDistance = 0;
+            for (let i = 1; i < path.length; i++) {
+                const dx = path[i].x - path[i-1].x, dy = path[i].y - path[i-1].y;
+                totalDistance += Math.sqrt(dx * dx + dy * dy);
+            }
+        }
+
+        function spawnHearts() {
+            for (let i = 0; i < 30; i++) {
+                heartParticles.push({
+                    x: W / 2 + (Math.random() - 0.5) * 60,
+                    y: H / 2 + (Math.random() - 0.5) * 60,
+                    vx: (Math.random() - 0.5) * 3,
+                    vy: (Math.random() - 0.5) * 3 - 1,
+                    size: Math.random() * 3 + 1,
+                    life: 1, decay: 0.01 + Math.random() * 0.02,
+                });
+            }
+        }
+
+        function updateHearts() {
+            for (let i = heartParticles.length - 1; i >= 0; i--) {
+                const p = heartParticles[i];
+                p.x += p.vx; p.y += p.vy; p.vy += 0.02; p.life -= p.decay;
+                if (p.life <= 0) heartParticles.splice(i, 1);
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            const bg = ctx.createLinearGradient(0, 0, 0, H);
+            bg.addColorStop(0, '#0a0a14'); bg.addColorStop(1, '#05050a');
+            ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+            // Roads
+            for (const r of roads) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(r.x1, r.y1); ctx.lineTo(r.x2, r.y2); ctx.stroke();
+            }
+
+            // Intersection dots
+            ctx.fillStyle = 'rgba(255,255,255,0.06)';
+            for (let x = 0; x < W; x += ROAD_SPACING) {
+                for (let y = 0; y < H; y += ROAD_SPACING) {
+                    ctx.beginPath(); ctx.arc(x, y, 1.5, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+
+            // Path
+            if (path.length > 1) {
+                const idx = Math.floor(carProgress * (path.length - 1));
+
+                // Traveled
+                if (idx > 0) {
+                    ctx.strokeStyle = 'rgba(79, 195, 247, 0.5)';
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowColor = '#4fc3f7'; ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    ctx.moveTo(path[0].x, path[0].y);
+                    for (let i = 1; i <= idx; i++) ctx.lineTo(path[i].x, path[i].y);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Remaining
+                ctx.strokeStyle = 'rgba(79, 195, 247, 0.08)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 8]);
+                ctx.beginPath();
+                ctx.moveTo(path[Math.min(idx, path.length-1)].x, path[Math.min(idx, path.length-1)].y);
+                for (let i = idx + 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Destination heart marker
+            if (!arrived) {
+                const hx = W / 2, hy = H / 2;
+                const pulse = Math.sin(performance.now() * 0.004) * 0.3 + 0.7;
+                ctx.strokeStyle = 'rgba(255,107,157,' + (pulse * 0.4).toFixed(2) + ')';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(hx, hy, 20 + pulse * 10, 0, Math.PI * 2); ctx.stroke();
+                ctx.fillStyle = '#ff6b9d';
+                ctx.beginPath(); ctx.arc(hx, hy, 6, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(hx, hy, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#ff6b9d';
+                ctx.font = '10px "PingFang SC", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('你的心里', hx, hy - 22);
+            }
+
+            // Car
+            if (driving && !arrived) {
+                ctx.save();
+                ctx.translate(carX, carY);
+                ctx.rotate(carAngle);
+
+                const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, 25);
+                cg.addColorStop(0, 'rgba(79,195,247,0.3)');
+                cg.addColorStop(1, 'rgba(79,195,247,0)');
+                ctx.fillStyle = cg;
+                ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI * 2); ctx.fill();
+
+                ctx.fillStyle = '#4fc3f7';
+                ctx.shadowColor = '#4fc3f7'; ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.moveTo(12, 0); ctx.lineTo(-6, -5);
+                ctx.lineTo(-4, 0); ctx.lineTo(-6, 5);
+                ctx.closePath(); ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.restore();
+
+                // Trail
+                if (Math.random() < 0.3) {
+                    ctx.fillStyle = 'rgba(79,195,247,0.3)';
+                    ctx.beginPath();
+                    ctx.arc(carX - Math.cos(carAngle) * 10, carY - Math.sin(carAngle) * 10, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Heart particles
+            for (const p of heartParticles) {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = '#ff6b9d';
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        function tick(ts) {
+            if (driving && !arrived) {
+                const elapsed = ts - driveStart;
+                carProgress = Math.min(elapsed / DRIVE_DURATION, 1);
+
+                const eased = carProgress < 0.5
+                    ? 4 * carProgress * carProgress * carProgress
+                    : 1 - Math.pow(-2 * carProgress + 2, 3) / 2;
+
+                const idx = Math.floor(eased * (path.length - 1));
+                const next = Math.min(idx + 1, path.length - 1);
+                carX = path[idx].x; carY = path[idx].y;
+                carAngle = Math.atan2(path[next].y - path[idx].y, path[next].x - path[idx].x);
+
+                const remaining = (1 - carProgress) * totalDistance;
+                document.getElementById('hud-dist').textContent = (remaining / 100).toFixed(2) + ' km';
+                const sec = Math.ceil((DRIVE_DURATION - elapsed) / 1000);
+                document.getElementById('hud-eta').textContent = sec > 0 ? `剩余 ${sec}s` : '已到达';
+
+                if (carProgress >= 1) {
+                    arrived = true;
+                    spawnHearts(); spawnHearts();
+                    setTimeout(() => {
+                        document.getElementById('arrival').classList.add('visible');
+                    }, 600);
+                }
+            }
+
+            if (arrived) {
+                updateHearts();
+                if (heartParticles.length < 20) spawnHearts();
+            }
+
+            draw();
+            requestAnimationFrame(tick);
+        }
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            buildPath();
+            carX = path[0].x; carY = path[0].y;
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('route-info').classList.add('visible');
+            driving = true;
+            driveStart = performance.now();
+        });
+
+        resize();
+        requestAnimationFrame(tick);
+    </script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>心动股票</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0f; font-family: -apple-system, 'PingFang SC', sans-serif; color: #fff; }
+        .stock-page { max-width: 500px; margin: 0 auto; padding: 20px; height: 100%; display: flex; flex-direction: column; }
+        .stock-header { text-align: center; padding: 16px 0; }
+        .stock-name { font-size: 14px; color: #888; letter-spacing: 2px; }
+        .stock-code { font-size: 11px; color: #555; margin-top: 2px; }
+        .stock-price { font-size: clamp(36px, 8vw, 52px); font-weight: 200; color: #4caf50; }
+        .stock-change { font-size: 14px; color: #4caf50; }
+        .chart-container { flex: 1; position: relative; margin: 10px 0; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .stock-details { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 12px 0; }
+        .detail-item { text-align: center; }
+        .detail-label { font-size: 9px; color: #555; letter-spacing: 1px; }
+        .detail-value { font-size: 13px; font-weight: 600; margin-top: 2px; }
+        .buy-section { padding: 12px 0; text-align: center; }
+        .buy-btn { padding: 14px 48px; background: linear-gradient(135deg, #4caf50, #2e7d32); border: none; border-radius: 25px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: 3px; }
+        .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at center, rgba(20,10,30,0.97), rgba(0,0,0,0.99)); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 1.5s ease; }
+        .overlay.visible { opacity: 1; pointer-events: auto; }
+        .overlay-text { font-size: clamp(18px, 4vw, 28px); color: #fff; letter-spacing: 4px; font-weight: 200; text-align: center; opacity: 0; animation: rise 1.5s ease 0.5s forwards; }
+        .overlay-text .pink { color: #ff6b9d; }
+        .overlay-sub { font-size: 11px; color: #555; letter-spacing: 3px; margin-top: 14px; opacity: 0; animation: rise 1.5s ease 1.5s forwards; }
+        @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="stock-page">
+        <div class="stock-header">
+            <div class="stock-name">心动集团</div>
+            <div class="stock-code">LOVE.520 &bull; NASDAQ</div>
+            <div class="stock-price">520.13</div>
+            <div class="stock-change">&#9650; +13.14 (+2.59%) &nbsp;今日</div>
+        </div>
+        <div class="chart-container"><canvas id="chart"></canvas></div>
+        <div class="stock-details">
+            <div class="detail-item"><div class="detail-label">开盘</div><div class="detail-value">507.00</div></div>
+            <div class="detail-item"><div class="detail-label">最高</div><div class="detail-value" style="color:#4caf50;">520.13</div></div>
+            <div class="detail-item"><div class="detail-label">最低</div><div class="detail-value">初见你时</div></div>
+        </div>
+        <div class="buy-section"><button class="buy-btn" id="buy-btn">&#128176; 全仓买入</button></div>
+    </div>
+    <div class="overlay" id="overlay">
+        <div class="overlay-text">全仓买入成功<br><span class="pink">你是我唯一的持仓</span></div>
+        <div class="overlay-sub">POSITION OPENED — HOLDING: FOREVER</div>
+    </div>
+    <script>
+        var canvas = document.getElementById('chart'), ctx = canvas.getContext('2d'), W, H;
+        function resize() {
+            var dpr = window.devicePixelRatio || 1, rect = canvas.parentElement.getBoundingClientRect();
+            W = rect.width; H = rect.height; canvas.width = W * dpr; canvas.height = H * dpr;
+            canvas.style.width = W + 'px'; canvas.style.height = H + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        resize(); window.addEventListener('resize', resize);
+        var data = [], val = 100;
+        for (var i = 0; i < 100; i++) { val += (Math.random() - 0.3) * 10; val = Math.max(50, val); data.push(val); }
+        for (var j = 80; j < 100; j++) data[j] = 100 + (j - 80) * 20 + Math.random() * 30;
+        var animIdx = 0;
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            if (animIdx < 2) { animIdx++; requestAnimationFrame(draw); return; }
+            var vis = Math.min(Math.ceil((animIdx - 2) * 2), data.length);
+            if (vis < 2) { animIdx++; requestAnimationFrame(draw); return; }
+            var minV = 0, maxV = Math.max.apply(null, data.slice(0, vis)) || 1, pad = 10;
+            ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+            for (var g = 0; g < 5; g++) { var gy = pad + ((H - 2 * pad) / 4) * g; ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+            ctx.beginPath();
+            for (var i2 = 0; i2 < vis; i2++) { var x = (i2 / 99) * W, y = pad + (1 - (data[i2] - minV) / (maxV - minV)) * (H - 2 * pad); i2 === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+            ctx.lineTo(((vis - 1) / 99) * W, H); ctx.lineTo(0, H); ctx.closePath();
+            var fg = ctx.createLinearGradient(0, 0, 0, H); fg.addColorStop(0, 'rgba(76,175,80,0.2)'); fg.addColorStop(1, 'rgba(76,175,80,0)');
+            ctx.fillStyle = fg; ctx.fill();
+            ctx.beginPath();
+            for (var i3 = 0; i3 < vis; i3++) { var x3 = (i3 / 99) * W, y3 = pad + (1 - (data[i3] - minV) / (maxV - minV)) * (H - 2 * pad); i3 === 0 ? ctx.moveTo(x3, y3) : ctx.lineTo(x3, y3); }
+            ctx.strokeStyle = '#4caf50'; ctx.lineWidth = 2; ctx.stroke();
+            if (vis > 0) { var lx = ((vis-1)/99)*W, ly = pad + (1 - (data[vis-1] - minV) / (maxV - minV)) * (H - 2*pad); ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI*2); ctx.fill(); }
+            if (vis < data.length) { animIdx++; requestAnimationFrame(draw); }
+        }
+        setTimeout(draw, 500);
+        document.getElementById('buy-btn').addEventListener('click', function() { document.getElementById('overlay').classList.add('visible'); });
+    </script>
+</body>
+</html>

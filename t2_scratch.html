@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今日运势</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ffecd2, #fcb69f, #ffecd2);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-family: 'PingFang SC', 'Microsoft YaHei', serif;
+            overflow: hidden;
+        }
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: #c0392b; text-decoration: none; font-size: 13px;
+            padding: 8px 16px; border: 1px solid rgba(192,57,43,0.3);
+            border-radius: 20px; transition: all 0.3s;
+        }
+        .back-btn:hover { background: rgba(192,57,43,0.1); }
+
+        .title {
+            font-size: clamp(22px, 5vw, 36px);
+            color: #c0392b; letter-spacing: 6px;
+            margin-bottom: 10px; font-weight: 300;
+        }
+        .subtitle {
+            font-size: clamp(13px, 2.5vw, 16px);
+            color: #e67e22; letter-spacing: 2px;
+            margin-bottom: 25px;
+        }
+
+        .card-wrapper {
+            position: relative;
+            width: min(380px, 85vw);
+            aspect-ratio: 16/10;
+            border-radius: 16px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15), 0 5px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .card-content {
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, #fff9e6, #fff5f5, #fff9e6);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 20px; border: 2px solid rgba(212,175,55,0.2);
+        }
+        .fortune-icon { font-size: 40px; margin-bottom: 8px; }
+        .fortune-level {
+            font-size: clamp(28px, 7vw, 48px);
+            font-weight: 700; color: #c0392b; letter-spacing: 8px;
+        }
+        .fortune-text {
+            font-size: clamp(14px, 3vw, 20px);
+            color: #e67e22; margin-top: 8px; letter-spacing: 2px;
+        }
+        .fortune-sub {
+            font-size: clamp(12px, 2.5vw, 15px);
+            color: #999; margin-top: 6px; letter-spacing: 1px;
+        }
+
+        #scratchCanvas {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            cursor: crosshair; z-index: 2; touch-action: none;
+        }
+
+        .hint {
+            margin-top: 20px; font-size: 14px; color: #aaa;
+            letter-spacing: 2px; transition: opacity 0.5s;
+        }
+
+        .confetti {
+            position: fixed; pointer-events: none; z-index: 50;
+            animation: confettiFall 3s ease-in forwards;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        .btn-reset {
+            margin-top: 18px; padding: 10px 30px;
+            border: 1px solid #c0392b; border-radius: 25px;
+            background: transparent; color: #c0392b;
+            font-size: 14px; cursor: pointer; letter-spacing: 2px;
+            transition: all 0.3s; opacity: 0; pointer-events: none;
+        }
+        .btn-reset.show { opacity: 1; pointer-events: auto; }
+        .btn-reset:hover { background: rgba(192,57,43,0.1); }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div class="title">今日运势</div>
+    <div class="subtitle">刮开涂层，查看你的专属运势</div>
+
+    <div class="card-wrapper" id="cardWrapper">
+        <div class="card-content">
+            <div class="fortune-icon">&#127811;</div>
+            <div class="fortune-level">大 吉</div>
+            <div class="fortune-text">宜恋爱</div>
+            <div class="fortune-sub">比如……和我</div>
+        </div>
+        <canvas id="scratchCanvas"></canvas>
+    </div>
+
+    <div class="hint" id="hint">用手指或鼠标刮开涂层 &#9999;</div>
+    <button class="btn-reset" id="btnReset">再刮一次</button>
+
+    <script>
+        const canvas = document.getElementById('scratchCanvas');
+        const ctx = canvas.getContext('2d');
+        const wrapper = document.getElementById('cardWrapper');
+        const hint = document.getElementById('hint');
+        const btnReset = document.getElementById('btnReset');
+        let isDrawing = false, revealed = false;
+
+        function initCanvas() {
+            const rect = wrapper.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+
+            const grad = ctx.createLinearGradient(0, 0, rect.width, rect.height);
+            grad.addColorStop(0, '#b8b8b8'); grad.addColorStop(0.3, '#d0d0d0');
+            grad.addColorStop(0.5, '#c8c8c8'); grad.addColorStop(0.7, '#d8d8d8');
+            grad.addColorStop(1, '#b0b0b0');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, rect.width, rect.height);
+            ctx.fillStyle = 'rgba(255,255,255,0.15)';
+            ctx.fillRect(0, 0, rect.width * 0.3, rect.height);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.font = 'bold 16px "PingFang SC", sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('刮开此处', rect.width / 2, rect.height / 2);
+            ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 2;
+            ctx.strokeRect(8, 8, rect.width - 16, rect.height - 16);
+
+            canvas.style.transition = 'none'; canvas.style.opacity = '1';
+            canvas.style.display = 'block';
+            wrapper.classList.remove('revealed');
+            revealed = false; hint.style.opacity = '1';
+            btnReset.classList.remove('show');
+        }
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const cx = e.touches ? e.touches[0].clientX : e.clientX;
+            const cy = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: cx - rect.left, y: cy - rect.top };
+        }
+
+        function scratch(pos) {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath(); ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2); ctx.fill();
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.arc(pos.x + (Math.random()-0.5)*20, pos.y + (Math.random()-0.5)*20,
+                    Math.random()*8+3, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function checkReveal() {
+            if (revealed) return;
+            const d = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let t = 0; const total = d.data.length / 4;
+            for (let i = 3; i < d.data.length; i += 4) { if (d.data[i] === 0) t++; }
+            if (t / total > 0.5) {
+                revealed = true;
+                canvas.style.transition = 'opacity 0.8s'; canvas.style.opacity = '0';
+                hint.style.opacity = '0';
+                setTimeout(() => { canvas.style.display = 'none'; btnReset.classList.add('show'); spawnConfetti(); }, 800);
+            }
+        }
+
+        function spawnConfetti() {
+            const colors = ['#e91e63','#ff6090','#D4AF37','#fcb69f','#ff9800','#4caf50','#2196f3'];
+            for (let i = 0; i < 40; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.cssText = `left:${Math.random()*100}vw;background:${colors[Math.floor(Math.random()*colors.length)]};
+                    animation-delay:${Math.random()*1.5}s;animation-duration:${2+Math.random()*2}s;
+                    width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;
+                    border-radius:${Math.random()>0.5?'50%':'0'};`;
+                document.body.appendChild(c);
+                setTimeout(() => c.remove(), 4000);
+            }
+        }
+
+        canvas.addEventListener('mousedown', e => { isDrawing = true; scratch(getPos(e)); });
+        canvas.addEventListener('mousemove', e => { if (isDrawing) { scratch(getPos(e)); checkReveal(); } });
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseleave', () => isDrawing = false);
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; scratch(getPos(e)); });
+        canvas.addEventListener('touchmove', e => { e.preventDefault(); if (isDrawing) { scratch(getPos(e)); checkReveal(); } });
+        canvas.addEventListener('touchend', () => isDrawing = false);
+        btnReset.addEventListener('click', initCanvas);
+
+        initCanvas();
+    </script>
+</body>
+</html>

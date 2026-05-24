@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>日历上的你</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow-y: auto; background: #f5f5f5; font-family: -apple-system, 'PingFang SC', sans-serif; color: #333; }
+        .cal-page { max-width: 400px; margin: 0 auto; min-height: 100vh; background: #fff; }
+        .cal-header { background: #ff6b9d; color: #fff; padding: 20px; text-align: center; }
+        .cal-year { font-size: 12px; opacity: 0.8; letter-spacing: 2px; }
+        .cal-month { font-size: 28px; font-weight: 200; margin-top: 4px; }
+        .cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); padding: 12px 16px 8px; }
+        .cal-weekday { text-align: center; font-size: 11px; color: #888; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); padding: 0 16px 20px; }
+        .cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; border-radius: 50%; position: relative; }
+        .cal-day.empty { visibility: hidden; }
+        .cal-day.today { background: #ff6b9d; color: #fff; font-weight: 700; }
+        .cal-day.love::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%; background: #ff6b9d; }
+        .cal-day.today.love::after { background: #fff; }
+        .cal-day.future { color: #ccc; }
+        .events { padding: 0 16px 80px; }
+        .events h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; padding-top: 16px; border-top: 1px solid #eee; }
+        .event-item { display: flex; gap: 12px; padding: 10px 0; }
+        .event-date { width: 40px; height: 40px; border-radius: 10px; background: #fff0f5; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+        .event-date .d { font-size: 16px; font-weight: 700; color: #ff6b9d; line-height: 1; }
+        .event-date .m { font-size: 8px; color: #888; }
+        .event-text { font-size: 13px; line-height: 1.5; }
+        .event-text .pink { color: #ff6b9d; font-weight: 600; }
+        .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at center, rgba(255,240,245,0.98), rgba(255,250,252,0.99)); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 1.2s ease; }
+        .overlay.visible { opacity: 1; pointer-events: auto; }
+        .overlay-text { font-size: clamp(18px, 4vw, 28px); color: #333; letter-spacing: 4px; text-align: center; opacity: 0; animation: rise 1.5s ease 0.5s forwards; }
+        .overlay-text .pink { color: #ff6b9d; }
+        .overlay-sub { font-size: 11px; color: #888; letter-spacing: 3px; margin-top: 14px; opacity: 0; animation: rise 1.5s ease 1.5s forwards; }
+        @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="cal-page">
+        <div class="cal-header"><div class="cal-year">2026</div><div class="cal-month" id="cal-month"></div></div>
+        <div class="cal-weekdays"><div class="cal-weekday">日</div><div class="cal-weekday">一</div><div class="cal-weekday">二</div><div class="cal-weekday">三</div><div class="cal-weekday">四</div><div class="cal-weekday">五</div><div class="cal-weekday">六</div></div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="events">
+            <h3>本月日程</h3>
+            <div class="event-item"><div class="event-date"><span class="d" id="ev-day"></span><span class="m" id="ev-month"></span></div><div class="event-text"><span class="pink">想你</span> — 全天日程，无法取消</div></div>
+            <div class="event-item"><div class="event-date"><span class="d" id="ev-day2"></span><span class="m" id="ev-month2"></span></div><div class="event-text"><span class="pink">见你</span> — 重复日程，每日循环</div></div>
+            <div class="event-item"><div class="event-date"><span class="d">&#8734;</span><span class="m">EVERY</span></div><div class="event-text"><span class="pink">爱你</span> — 永久日程，不可删除</div></div>
+        </div>
+    </div>
+    <div class="overlay" id="overlay">
+        <div class="overlay-text">每一天，<span class="pink">都是你的日程</span></div>
+        <div class="overlay-sub">CALENDAR SYNCED — EVERY DAY: YOU</div>
+    </div>
+    <script>
+        var now = new Date();
+        var months = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+        document.getElementById('cal-month').textContent = months[now.getMonth()];
+        var firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+        var daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        var today = now.getDate();
+        var grid = document.getElementById('cal-grid');
+        var loveDays = [2,5,8,11,14,17,20,23,26,29];
+        for (var i = 0; i < firstDay; i++) { var e = document.createElement('div'); e.className = 'cal-day empty'; grid.appendChild(e); }
+        for (var d = 1; d <= daysInMonth; d++) {
+            var cell = document.createElement('div'); cell.className = 'cal-day';
+            if (d === today) cell.classList.add('today');
+            if (d > today) cell.classList.add('future');
+            if (loveDays.indexOf(d) >= 0) cell.classList.add('love');
+            cell.textContent = d; grid.appendChild(cell);
+        }
+        document.getElementById('ev-day').textContent = today;
+        document.getElementById('ev-month').textContent = months[now.getMonth()];
+        document.getElementById('ev-day2').textContent = Math.min(today + 1, daysInMonth);
+        document.getElementById('ev-month2').textContent = months[now.getMonth()];
+        setTimeout(function() { document.getElementById('overlay').classList.add('visible'); }, 3000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>弹幕告白</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background: #0a0a0f;
+            font-family: 'PingFang SC', 'Helvetica Neue', sans-serif;
+        }
+        canvas { display: block; }
+
+        .bg-text {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(40px, 10vw, 80px);
+            color: rgba(255,255,255,0.03);
+            white-space: nowrap; pointer-events: none;
+            letter-spacing: 8px;
+        }
+
+        .input-area {
+            position: absolute; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; gap: 8px; z-index: 10;
+            width: min(90vw, 500px);
+        }
+        .input-area input {
+            flex: 1; padding: 12px 16px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 25px; color: #fff;
+            font-size: 14px; outline: none; font-family: inherit;
+            backdrop-filter: blur(10px);
+        }
+        .input-area input::placeholder { color: #555; }
+        .input-area input:focus { border-color: rgba(255,107,157,0.4); }
+        .input-area button {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #ff6b9d, #c084fc);
+            border: none; border-radius: 25px;
+            color: #fff; font-size: 13px; cursor: pointer;
+            font-family: inherit; letter-spacing: 2px;
+            white-space: nowrap;
+        }
+
+        .secret-overlay {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, rgba(20,10,30,0.97), rgba(0,0,0,0.99));
+            z-index: 100; opacity: 0; pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+        .secret-overlay.visible { opacity: 1; pointer-events: auto; }
+        .secret-heart { font-size: 60px; animation: heartbeat 1s ease-in-out infinite; }
+        @keyframes heartbeat {
+            0%,100% { transform: scale(1); }
+            15% { transform: scale(1.2); }
+            30% { transform: scale(1); }
+        }
+        .secret-text {
+            font-size: clamp(18px, 4vw, 30px); color: #fff;
+            letter-spacing: 4px; font-weight: 200; margin-top: 20px;
+            text-align: center; opacity: 0; animation: rise 1.5s ease 0.5s forwards;
+        }
+        .secret-text .pink { color: #ff6b9d; font-weight: 500; }
+        .secret-sub {
+            font-size: 11px; color: #555; letter-spacing: 3px; margin-top: 14px;
+            opacity: 0; animation: rise 1.5s ease 1.5s forwards;
+        }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="bg-text">&#10084; &#10084; &#10084;</div>
+
+    <div class="input-area">
+        <input type="text" id="danmaku-input" placeholder="发射弹幕..." maxlength="30">
+        <button id="send-btn">&#9654; 发送</button>
+    </div>
+
+    <div class="secret-overlay" id="secret">
+        <div class="secret-heart">&#10084;</div>
+        <div class="secret-text">满屏弹幕，<br>只有一句是真的：<br><span class="pink">我喜欢你</span></div>
+        <div class="secret-sub">DANMAKU COMPLETE — SECRET MESSAGE REVEALED</div>
+    </div>
+
+    <script>
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        var W, H, dpr;
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            W = window.innerWidth; H = window.innerHeight;
+            canvas.width = W * dpr; canvas.height = H * dpr;
+            canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        var danmaku = [];
+        var lanes = [];
+        var LANE_COUNT = 12;
+        var LANE_HEIGHT;
+        var activated = false;
+
+        function initLanes() {
+            LANE_HEIGHT = H / LANE_COUNT;
+            lanes = [];
+            for (var i = 0; i < LANE_COUNT; i++) lanes.push(0);
+        }
+        initLanes();
+        window.addEventListener('resize', initLanes);
+
+        var presets = [
+            '我喜欢你', '在一起在一起', '答应他！', '这也太甜了吧',
+            '磕到了磕到了', '99不异地恋', '好甜！', '民政局搬来了',
+            '这就是爱情吗', '甜度超标', '我嗑的CP成真了',
+            '前方高甜预警', 'awsl', '泪目了', '太好哭了',
+            '今天也是为爱情流泪的一天', '请原地结婚', 'kswl',
+            '甜到掉牙', '祝福祝福',
+        ];
+
+        function spawnDanmaku(text, color, size, isGold) {
+            var lane = Math.floor(Math.random() * LANE_COUNT);
+            var y = lane * LANE_HEIGHT + LANE_HEIGHT / 2;
+            danmaku.push({
+                x: W + 20, y: y,
+                text: text, color: color || '#fff',
+                size: size || (12 + Math.random() * 8),
+                speed: 0.8 + Math.random() * 1.2,
+                isGold: isGold || false,
+                alpha: 0.7 + Math.random() * 0.3,
+            });
+        }
+
+        // Auto spawn
+        var presetIdx = 0;
+        function autoSpawn() {
+            if (presetIdx < presets.length && !activated) {
+                var colors = ['#fff', '#ff6b9d', '#4fc3f7', '#c084fc', '#ffd54f', '#81c784'];
+                spawnDanmaku(presets[presetIdx], colors[presetIdx % colors.length]);
+                presetIdx++;
+                setTimeout(autoSpawn, 600 + Math.random() * 400);
+            }
+        }
+        setTimeout(autoSpawn, 500);
+
+        // User input
+        document.getElementById('send-btn').addEventListener('click', sendInput);
+        document.getElementById('danmaku-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendInput();
+        });
+
+        function sendInput() {
+            var input = document.getElementById('danmaku-input');
+            var text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+
+            if (text === '我愿意' && !activated) {
+                activated = true;
+                // Triple golden danmaku
+                for (var i = 0; i < 3; i++) {
+                    setTimeout(function() {
+                        spawnDanmaku('&#10084; 我愿意 &#10084;', '#ffd54f', 24, true);
+                    }, i * 300);
+                }
+                // Fireworks
+                var fireworks = [];
+                for (var f = 0; f < 5; f++) {
+                    setTimeout(function() {
+                        var fx = Math.random() * W, fy = Math.random() * H * 0.5;
+                        for (var p = 0; p < 30; p++) {
+                            var angle = (p / 30) * Math.PI * 2;
+                            var speed = 1 + Math.random() * 3;
+                            fireworks.push({
+                                x: fx, y: fy,
+                                vx: Math.cos(angle) * speed,
+                                vy: Math.sin(angle) * speed,
+                                life: 1, decay: 0.015,
+                                color: ['#ff6b9d','#ffd54f','#4fc3f7','#c084fc'][Math.floor(Math.random()*4)],
+                            });
+                        }
+                    }, f * 400);
+                }
+                setTimeout(function() {
+                    document.getElementById('secret').classList.add('visible');
+                }, 2500);
+            } else {
+                spawnDanmaku(text, '#fff', 14 + Math.random() * 6);
+            }
+        }
+
+        var time = 0;
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+
+            // Background
+            var bg = ctx.createLinearGradient(0, 0, 0, H);
+            bg.addColorStop(0, '#0a0a0f');
+            bg.addColorStop(1, '#0f0515');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, W, H);
+
+            // Update danmaku
+            for (var i = danmaku.length - 1; i >= 0; i--) {
+                var d = danmaku[i];
+                d.x -= d.speed;
+                if (d.x < -300) { danmaku.splice(i, 1); continue; }
+
+                ctx.globalAlpha = d.alpha;
+                ctx.fillStyle = d.color;
+                ctx.font = (d.isGold ? 'bold ' : '') + d.size + 'px "PingFang SC", sans-serif';
+
+                if (d.isGold) {
+                    ctx.shadowColor = '#ffd54f';
+                    ctx.shadowBlur = 15;
+                }
+                ctx.fillText(d.text, d.x, d.y);
+                ctx.shadowBlur = 0;
+            }
+            ctx.globalAlpha = 1;
+
+            time++;
+            requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
+</body>
+</html>

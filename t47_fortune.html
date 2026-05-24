@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>每日运势：爱情</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow-y: auto; background: #1a0a2e; font-family: -apple-system, 'PingFang SC', sans-serif; color: #fff; }
+        .fortune-page { max-width: 400px; margin: 0 auto; min-height: 100vh; padding: 20px; }
+        .fortune-header { text-align: center; padding: 30px 0 20px; }
+        .fortune-date { font-size: 11px; color: #888; letter-spacing: 3px; margin-bottom: 10px; }
+        .fortune-sign { font-size: 48px; margin-bottom: 10px; }
+        .fortune-title { font-size: 24px; font-weight: 300; letter-spacing: 4px; }
+        .fortune-score { margin: 20px 0; text-align: center; background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(192,132,252,0.1)); border: 1px solid rgba(255,107,157,0.2); border-radius: 16px; padding: 20px; }
+        .score-label { font-size: 11px; color: #888; letter-spacing: 2px; margin-bottom: 8px; }
+        .score-value { font-size: 48px; font-weight: 700; color: #ff6b9d; }
+        .score-max { font-size: 14px; color: #555; }
+        .fortune-items { padding: 10px 0; }
+        .fortune-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .fortune-item .label { font-size: 10px; color: #666; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+        .fortune-item .value { font-size: 14px; line-height: 1.6; }
+        .fortune-item .value.pink { color: #ff6b9d; }
+        .lucky-section { margin-top: 10px; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
+        .lucky-title { font-size: 10px; color: #666; letter-spacing: 2px; margin-bottom: 10px; }
+        .lucky-items { display: flex; flex-wrap: wrap; gap: 8px; }
+        .lucky-tag { padding: 4px 12px; background: rgba(255,107,157,0.1); border: 1px solid rgba(255,107,157,0.2); border-radius: 15px; font-size: 12px; color: #ff6b9d; }
+        .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at center, rgba(20,10,30,0.97), rgba(0,0,0,0.99)); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 1.5s ease; }
+        .overlay.visible { opacity: 1; pointer-events: auto; }
+        .overlay-text { font-size: clamp(18px, 4vw, 28px); color: #fff; letter-spacing: 4px; text-align: center; opacity: 0; animation: rise 1.5s ease 0.5s forwards; }
+        .overlay-text .pink { color: #ff6b9d; }
+        .overlay-sub { font-size: 11px; color: #555; letter-spacing: 3px; margin-top: 14px; opacity: 0; animation: rise 1.5s ease 1.5s forwards; }
+        @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="fortune-page">
+        <div class="fortune-header"><div class="fortune-date" id="fortune-date"></div><div class="fortune-sign">&#127775;</div><div class="fortune-title">今日运势</div></div>
+        <div class="fortune-score"><div class="score-label">爱情指数</div><div class="score-value">99</div><div class="score-max">/ 100</div></div>
+        <div class="fortune-items">
+            <div class="fortune-item"><div class="label">今日宜</div><div class="value pink">表白、约会、牵手、拥抱、想你</div></div>
+            <div class="fortune-item"><div class="label">今日忌</div><div class="value">冷战、不回消息、一个人吃饭</div></div>
+            <div class="fortune-item"><div class="label">心动时刻</div><div class="value pink">当你看到这行字的时候</div></div>
+            <div class="fortune-item"><div class="label">运势解读</div><div class="value">今日星象显示：有人正在偷偷喜欢你。不是别人，就是屏幕前正在读这段文字的你。</div></div>
+        </div>
+        <div class="lucky-section"><div class="lucky-title">今日幸运</div><div class="lucky-items"><span class="lucky-tag">颜色：粉色</span><span class="lucky-tag">数字：520</span><span class="lucky-tag">方向：Ta的方向</span><span class="lucky-tag">状态：被爱</span></div></div>
+    </div>
+    <div class="overlay" id="overlay">
+        <div class="overlay-text">运势不会骗人<br><span class="pink">今天适合在一起</span></div>
+        <div class="overlay-sub">FORTUNE TOLD — TODAY: TOGETHER</div>
+    </div>
+    <script>
+        var now = new Date(), days = ['周日','周一','周二','周三','周四','周五','周六'];
+        document.getElementById('fortune-date').textContent = now.getFullYear() + '.' + (now.getMonth()+1) + '.' + now.getDate() + ' ' + days[now.getDay()];
+        setTimeout(function() { document.getElementById('overlay').classList.add('visible'); }, 4000);
+    </script>
+</body>
+</html>

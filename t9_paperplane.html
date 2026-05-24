@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>纸飞机送信</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background: linear-gradient(180deg, #87CEEB, #E0F0FF, #FFF8E7);
+            font-family: 'PingFang SC', 'Helvetica Neue', sans-serif;
+        }
+        canvas { display: block; }
+
+        .hint {
+            position: absolute; bottom: 40px; left: 0; right: 0;
+            text-align: center; font-size: 12px; color: rgba(0,0,0,0.3);
+            letter-spacing: 3px; animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+
+        .letter-overlay {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 100; opacity: 0; pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+        .letter-overlay.visible { opacity: 1; pointer-events: auto; }
+        .letter-paper {
+            max-width: min(400px, 85vw);
+            background: #fff; border-radius: 12px;
+            padding: 36px 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            text-align: center;
+            transform: scale(0.9); transition: transform 0.8s ease;
+        }
+        .letter-overlay.visible .letter-paper { transform: scale(1); }
+        .letter-paper .icon { font-size: 36px; margin-bottom: 16px; }
+        .letter-paper .title {
+            font-size: clamp(18px, 4vw, 26px); color: #333;
+            letter-spacing: 3px; margin-bottom: 12px;
+        }
+        .letter-paper .title .pink { color: #ff6b9d; }
+        .letter-paper .body {
+            font-size: 14px; color: #666; line-height: 2;
+        }
+        .letter-paper .sub {
+            font-size: 11px; color: #999; letter-spacing: 3px; margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="hint" id="hint">点击屏幕放飞纸飞机</div>
+
+    <div class="letter-overlay" id="letter">
+        <div class="letter-paper">
+            <div class="icon">&#9992;</div>
+            <div class="title">这架飞机<br>飞了<span class="pink">很远很远</span></div>
+            <div class="body">
+                从我的心出发<br>
+                跨越人海<br>
+                降落在你的手心<br><br>
+                信的内容只有一句：<br>
+                <strong style="color:#ff6b9d;font-size:18px;">我喜欢你</strong>
+            </div>
+            <div class="sub">MESSAGE DELIVERED &bull; PAPER PLANE &bull; 520km</div>
+        </div>
+    </div>
+
+    <script>
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        var W, H, dpr;
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            W = window.innerWidth; H = window.innerHeight;
+            canvas.width = W * dpr; canvas.height = H * dpr;
+            canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        var launched = false;
+        var trail = [];
+
+        var clouds = [];
+        for (var c = 0; c < 5; c++) {
+            clouds.push({
+                x: Math.random() * W,
+                y: Math.random() * H * 0.6,
+                w: 60 + Math.random() * 80,
+                speed: 0.2 + Math.random() * 0.3,
+            });
+        }
+
+        function drawPaperPlane(x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(size, 0);
+            ctx.lineTo(-size * 0.6, -size * 0.4);
+            ctx.lineTo(-size * 0.2, 0);
+            ctx.lineTo(-size * 0.6, size * 0.4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+            ctx.beginPath();
+            ctx.moveTo(size, 0);
+            ctx.lineTo(-size * 0.2, 0);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            var sky = ctx.createLinearGradient(0, 0, 0, H);
+            sky.addColorStop(0, '#87CEEB');
+            sky.addColorStop(0.5, '#B0E0F0');
+            sky.addColorStop(1, '#FFF8E7');
+            ctx.fillStyle = sky;
+            ctx.fillRect(0, 0, W, H);
+
+            for (var i = 0; i < clouds.length; i++) {
+                clouds[i].x += clouds[i].speed;
+                if (clouds[i].x > W + 100) clouds[i].x = -clouds[i].w;
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.beginPath();
+                ctx.ellipse(clouds[i].x, clouds[i].y, clouds[i].w / 2, 20, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(clouds[i].x - clouds[i].w * 0.2, clouds[i].y - 10, clouds[i].w * 0.3, 16, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            if (launched && !arrived) {
+                trail.push({ x: planeX, y: planeY, life: 1 });
+                for (var j = trail.length - 1; j >= 0; j--) {
+                    trail[j].life -= 0.01;
+                    if (trail[j].life <= 0) { trail.splice(j, 1); continue; }
+                    ctx.fillStyle = 'rgba(100,180,255,' + (trail[j].life * 0.3) + ')';
+                    ctx.beginPath();
+                    ctx.arc(trail[j].x, trail[j].y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+
+        var planeX, planeY, planeAngle, arrived = false;
+
+        function launch() {
+            if (launched) return;
+            launched = true;
+            document.getElementById('hint').style.display = 'none';
+
+            planeX = W * 0.1;
+            planeY = H * 0.7;
+            planeAngle = -0.3;
+
+            var targetX = W * 0.7;
+            var targetY = H * 0.3;
+            var duration = 3000;
+            var start = performance.now();
+
+            function tick(now) {
+                var t = Math.min((now - start) / duration, 1);
+                var eased = 1 - Math.pow(1 - t, 3);
+
+                planeX = W * 0.1 + (targetX - W * 0.1) * eased;
+                planeY = H * 0.7 + (targetY - H * 0.7) * eased
+                    - Math.sin(t * Math.PI) * H * 0.15;
+                planeAngle = -0.3 + t * 0.3;
+
+                drawPaperPlane(planeX, planeY, planeAngle, 20);
+
+                if (t < 1) {
+                    requestAnimationFrame(tick);
+                } else {
+                    arrived = true;
+                    drawPaperPlane(targetX, targetY, 0, 25);
+                    setTimeout(function() {
+                        document.getElementById('letter').classList.add('visible');
+                    }, 800);
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+
+        document.addEventListener('click', launch);
+        document.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            launch();
+        }, { passive: false });
+    </script>
+</body>
+</html>

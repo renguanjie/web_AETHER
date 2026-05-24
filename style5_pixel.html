@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOVE QUEST - PLAYER 1</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; image-rendering: pixelated; }
+        body {
+            background: #202028; min-height: 100vh; overflow: hidden;
+            font-family: 'Courier New', monospace; color: #f8f8f8;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: #f8b800; text-decoration: none; font-size: 13px;
+            padding: 6px 14px; border: 2px solid rgba(248,184,0,0.4);
+            font-family: 'Courier New', monospace; transition: all 0.2s;
+        }
+        .back-btn:hover { background: rgba(248,184,0,0.15); }
+
+        #game {
+            width: 100%; max-width: 640px; height: 100vh; max-height: 480px;
+            position: relative; overflow: hidden;
+            border: 4px solid #f8f8f8; background: #202028;
+        }
+
+        #startScreen {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 10;
+        }
+        .title-text {
+            font-size: clamp(20px, 6vw, 36px);
+            color: #e44040; letter-spacing: 4px;
+            text-shadow: 3px 3px 0 #000; margin-bottom: 10px;
+        }
+        .subtitle-text {
+            font-size: clamp(12px, 3vw, 18px);
+            color: #f8b800; letter-spacing: 2px; margin-bottom: 50px;
+        }
+        .blink-text {
+            font-size: clamp(14px, 3vw, 20px);
+            color: #f8f8f8; animation: pixelBlink 1s infinite;
+            cursor: pointer; padding: 10px 30px;
+        }
+        @keyframes pixelBlink { 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
+
+        #dialogue {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: #000; border-top: 4px solid #f8f8f8;
+            padding: 20px; z-index: 20; display: none;
+        }
+        #dialogue.active { display: block; }
+        .dialogue-text {
+            font-size: clamp(13px, 3vw, 17px); line-height: 1.8;
+            color: #f8f8f8; min-height: 50px;
+        }
+        .dialogue-arrow {
+            display: inline-block; animation: arrowBounce 0.6s infinite;
+            color: #f8b800; margin-left: 5px;
+        }
+        @keyframes arrowBounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(5px);} }
+
+        #character {
+            position: absolute; left: 50%; top: 30%;
+            transform: translateX(-50%); z-index: 5;
+        }
+        .pixel-heart {
+            width: 80px; height: 72px; position: relative;
+        }
+        .pixel-heart::before {
+            content: ''; position: absolute; inset: 0;
+            background:
+                linear-gradient(#e44040,#e44040) 12px 0 / 20px 12px,
+                linear-gradient(#e44040,#e44040) 48px 0 / 20px 12px,
+                linear-gradient(#e44040,#e44040) 4px 12px / 32px 12px,
+                linear-gradient(#e44040,#e44040) 44px 12px / 32px 12px,
+                linear-gradient(#e44040,#e44040) 0px 24px / 80px 12px,
+                linear-gradient(#e44040,#e44040) 0px 36px / 80px 12px,
+                linear-gradient(#e44040,#e44040) 4px 48px / 72px 12px,
+                linear-gradient(#e44040,#e44040) 12px 60px / 56px 12px,
+                linear-gradient(#e44040,#e44040) 20px 72px / 40px 12px;
+        }
+
+        #choices {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 20px; z-index: 25;
+            display: none; flex-direction: column; align-items: center; gap: 15px;
+            background: rgba(0,0,0,0.9);
+        }
+        #choices.active { display: flex; }
+        .choice-btn {
+            width: 80%; max-width: 400px; padding: 12px 20px;
+            background: #202028; border: 3px solid #f8f8f8;
+            color: #f8f8f8; font-size: clamp(13px, 3vw, 16px);
+            font-family: 'Courier New', monospace; cursor: pointer;
+            transition: all 0.15s; letter-spacing: 1px;
+        }
+        .choice-btn:hover { background: #f8f8f8; color: #202028; }
+        .yes-btn { border-color: #44a044; color: #44a044; }
+        .yes-btn:hover { background: #44a044; color: #f8f8f8; }
+        .no-btn { border-color: #e44040; color: #e44040; }
+        .no-btn:hover { background: #e44040; color: #f8f8f8; }
+
+        #result {
+            position: absolute; inset: 0; display: none;
+            flex-direction: column; justify-content: center;
+            align-items: center; z-index: 30; background: #202028;
+        }
+        #result.active { display: flex; }
+        .result-text {
+            font-size: clamp(18px, 5vw, 30px);
+            letter-spacing: 3px; margin-bottom: 20px;
+            animation: resultPulse 0.8s infinite;
+        }
+        @keyframes resultPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.05);} }
+        .result-sub { font-size: clamp(12px, 3vw, 16px); color: #8a8a9a; letter-spacing: 1px; }
+
+        @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-8px);} 75%{transform:translateX(8px);} }
+        .shake { animation: shake 0.15s infinite; }
+
+        .float-heart {
+            position: absolute; font-size: 24px;
+            animation: floatUp 2s ease-out forwards;
+            pointer-events: none; z-index: 35;
+        }
+        @keyframes floatUp {
+            0%{opacity:1;transform:translateY(0) scale(1);}
+            100%{opacity:0;transform:translateY(-200px) scale(0.5);}
+        }
+
+        .level-up {
+            font-size: clamp(20px, 6vw, 36px); color: #f8b800;
+            text-shadow: 3px 3px 0 #000;
+            animation: levelPop 0.5s ease-out;
+        }
+        @keyframes levelPop {
+            0%{transform:scale(0);opacity:0;} 70%{transform:scale(1.2);} 100%{transform:scale(1);opacity:1;}
+        }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; PORTAL</a>
+
+    <div id="game">
+        <div id="startScreen">
+            <div class="title-text">LOVE QUEST</div>
+            <div class="subtitle-text">~ The Hidden Story ~</div>
+            <div class="blink-text" id="startBtn">PRESS START</div>
+        </div>
+
+        <div id="character"><div class="pixel-heart"></div></div>
+
+        <div id="dialogue">
+            <div class="dialogue-text" id="dlgText"></div>
+            <span class="dialogue-arrow">&#9660;</span>
+        </div>
+
+        <div id="choices">
+            <button class="choice-btn yes-btn" id="choiceYes">&#10084; 接受表白</button>
+            <button class="choice-btn no-btn" id="choiceNo">&#10060; 拒绝（难度：地狱级）</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const startScreen = document.getElementById('startScreen');
+        const dialogue = document.getElementById('dialogue');
+        const dlgText = document.getElementById('dlgText');
+        const choices = document.getElementById('choices');
+        const result = document.getElementById('result');
+        const game = document.getElementById('game');
+
+        const dialogues = [
+            "恭喜你通关了「孤单日常」副本！",
+            "现在触发隐藏剧情——",
+            "「对你的心动表白」",
+            "",
+            "我的心跳自从遇见你就不受控制了...",
+            "你愿意接受这份心意吗？"
+        ];
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            startScreen.style.display = 'none';
+            showDialogue(0);
+        });
+
+        function showDialogue(idx) {
+            if (idx >= dialogues.length) {
+                setTimeout(() => {
+                    dialogue.classList.remove('active');
+                    choices.classList.add('active');
+                }, 1000);
+                return;
+            }
+            dialogue.classList.add('active');
+            typeText(dialogues[idx], () => setTimeout(() => showDialogue(idx+1), 800));
+        }
+
+        function typeText(text, cb) {
+            if (text === '') { dlgText.textContent = ''; setTimeout(cb, 400); return; }
+            dlgText.textContent = '';
+            let ci = 0;
+            function tc() {
+                if (ci < text.length) {
+                    dlgText.textContent += text[ci]; ci++;
+                    setTimeout(tc, 60);
+                } else { setTimeout(cb, 300); }
+            }
+            tc();
+        }
+
+        document.getElementById('choiceYes').addEventListener('click', () => {
+            choices.classList.remove('active');
+            result.classList.add('active');
+            result.innerHTML = `
+                <div class="level-up">LEVEL UP!</div>
+                <div class="result-text" style="color:#44a044;">LOVE +999</div>
+                <div class="result-sub">解锁成就：两个人的冒险</div>
+                <div style="margin-top:30px;font-size:40px;">&#10084;</div>
+            `;
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => {
+                    const h = document.createElement('div');
+                    h.className = 'float-heart';
+                    h.textContent = '&#10084;';
+                    h.style.left = (10+Math.random()*80)+'%';
+                    h.style.bottom = '20%';
+                    game.appendChild(h);
+                    setTimeout(() => h.remove(), 3000);
+                }, i * 200);
+            }
+        });
+
+        document.getElementById('choiceNo').addEventListener('click', () => {
+            choices.classList.remove('active');
+            game.classList.add('shake');
+            setTimeout(() => game.classList.remove('shake'), 1000);
+            result.classList.add('active');
+            result.innerHTML = `
+                <div class="result-text" style="color:#e44040;">GAME OVER</div>
+                <div class="result-sub">难度太高了...系统无法接受</div>
+                <div style="margin-top:20px;font-size:14px;color:#8a8a9a;">3秒后自动重试...</div>
+            `;
+            setTimeout(() => {
+                result.classList.remove('active'); result.innerHTML = '';
+                choices.classList.add('active');
+            }, 3000);
+        });
+    </script>
+</body>
+</html>

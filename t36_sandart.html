@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>沙画告白</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background: #0a0806;
+            font-family: 'PingFang SC', 'Helvetica Neue', sans-serif;
+        }
+        canvas { display: block; }
+
+        .sand-text {
+            position: absolute; bottom: 40px; left: 0; right: 0;
+            text-align: center;
+            font-size: clamp(14px, 3vw, 18px);
+            color: rgba(218,165,32,0.6);
+            letter-spacing: 4px;
+            opacity: 0; transition: opacity 1.5s ease;
+        }
+        .sand-text.visible { opacity: 1; }
+
+        .final-overlay {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, rgba(20,15,8,0.97), rgba(5,3,1,0.99));
+            z-index: 100; opacity: 0; pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+        .final-overlay.visible { opacity: 1; pointer-events: auto; }
+        .final-text {
+            font-size: clamp(20px, 5vw, 36px);
+            color: #daa520; letter-spacing: 6px;
+            font-weight: 200; text-align: center;
+            line-height: 1.8;
+            opacity: 0; animation: rise 1.5s ease 0.5s forwards;
+        }
+        .final-text .pink { color: #ff6b9d; font-weight: 400; }
+        .final-sub {
+            font-size: 11px; color: #555; letter-spacing: 3px; margin-top: 14px;
+            opacity: 0; animation: rise 1.5s ease 1.5s forwards;
+        }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="sand-text" id="sand-text">金沙汇聚，只为写出这句话</div>
+
+    <div class="final-overlay" id="final">
+        <div class="final-text">你是我最美的意外<br><span class="pink">也是我最确定的选择</span></div>
+        <div class="final-sub">SAND ART COMPLETE — EVERY GRAIN SAYS I LOVE YOU</div>
+    </div>
+
+    <script>
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        var W, H, dpr;
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            W = window.innerWidth; H = window.innerHeight;
+            canvas.width = W * dpr; canvas.height = H * dpr;
+            canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Create target positions forming "你是我最美的意外"
+        var targetCanvas = document.createElement('canvas');
+        targetCanvas.width = W;
+        targetCanvas.height = H;
+        var tCtx = targetCanvas.getContext('2d');
+        tCtx.fillStyle = '#fff';
+        tCtx.font = 'bold ' + Math.min(W * 0.08, 60) + 'px "PingFang SC", sans-serif';
+        tCtx.textAlign = 'center';
+        tCtx.textBaseline = 'middle';
+        tCtx.fillText('你是我最美的意外', W / 2, H / 2);
+
+        var imageData = tCtx.getImageData(0, 0, W, H);
+        var targets = [];
+        var step = 4;
+        for (var y = 0; y < H; y += step) {
+            for (var x = 0; x < W; x += step) {
+                var idx = (y * W + x) * 4;
+                if (imageData.data[idx + 3] > 128) {
+                    targets.push({ x: x, y: y });
+                }
+            }
+        }
+
+        // Sample targets to get reasonable particle count
+        var sampleRate = Math.max(1, Math.floor(targets.length / 1500));
+        var sampledTargets = [];
+        for (var i = 0; i < targets.length; i += sampleRate) {
+            sampledTargets.push(targets[i]);
+        }
+
+        var particles = [];
+        var finishedCount = 0;
+        var allDone = false;
+
+        for (var j = 0; j < sampledTargets.length; j++) {
+            var t = sampledTargets[j];
+            particles.push({
+                x: Math.random() * W,
+                y: -Math.random() * H * 0.5,
+                targetX: t.x,
+                targetY: t.y,
+                vx: 0, vy: 0,
+                size: 1.5 + Math.random() * 1.5,
+                arrived: false,
+                delay: Math.random() * 2000,
+            });
+        }
+
+        var startTime = performance.now();
+
+        function draw() {
+            var elapsed = performance.now() - startTime;
+
+            ctx.clearRect(0, 0, W, H);
+
+            // Background
+            var bg = ctx.createLinearGradient(0, 0, 0, H);
+            bg.addColorStop(0, '#0a0806');
+            bg.addColorStop(1, '#1a1208');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, W, H);
+
+            var allArrived = true;
+
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
+                if (elapsed < p.delay) { allArrived = false; continue; }
+
+                if (!p.arrived) {
+                    var dx = p.targetX - p.x;
+                    var dy = p.targetY - p.y;
+                    var dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 2) {
+                        p.arrived = true;
+                        p.x = p.targetX;
+                        p.y = p.targetY;
+                    } else {
+                        allArrived = false;
+                        var force = 0.04;
+                        p.vx += dx * force;
+                        p.vy += dy * force;
+                        p.vx *= 0.92;
+                        p.vy *= 0.92;
+                        p.x += p.vx;
+                        p.y += p.vy;
+                    }
+                } else {
+                    // Subtle shimmer when arrived
+                    p.x = p.targetX + (Math.random() - 0.5) * 0.5;
+                    p.y = p.targetY + (Math.random() - 0.5) * 0.5;
+                }
+
+                // Draw sand particle
+                var alpha = p.arrived ? 0.9 : 0.6;
+                var brightness = p.arrived ? 218 : 180 + Math.random() * 30;
+                ctx.fillStyle = 'rgba(' + brightness + ',' + (brightness * 0.7 | 0) + ',' + (brightness * 0.3 | 0) + ',' + alpha + ')';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            if (allArrived && !allDone) {
+                allDone = true;
+                document.getElementById('sand-text').classList.add('visible');
+                setTimeout(function() {
+                    document.getElementById('final').classList.add('visible');
+                }, 2500);
+            }
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
+</body>
+</html>

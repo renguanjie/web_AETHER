@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>恋爱数据看板</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            font-family: 'PingFang SC', 'Helvetica Neue', sans-serif;
+            color: #fff; overflow-x: hidden;
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; }
+
+        .dashboard-header {
+            text-align: center; padding: 40px 20px 20px;
+        }
+        .dashboard-header h1 {
+            font-size: clamp(24px, 5vw, 40px); font-weight: 300;
+            letter-spacing: 6px;
+            background: linear-gradient(90deg, #ff6b9d, #c084fc, #60a5fa);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .dashboard-header p {
+            font-size: 14px; color: rgba(255,255,255,0.4);
+            letter-spacing: 3px; margin-top: 8px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(280px, 90vw), 1fr));
+            gap: 20px; padding: 20px; max-width: 1200px; margin: 0 auto;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 24px;
+            opacity: 0; transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .card.visible { opacity: 1; transform: translateY(0); }
+        .card:hover { border-color: rgba(255,107,157,0.3); }
+
+        .card-title {
+            font-size: 12px; color: rgba(255,255,255,0.4);
+            letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px;
+        }
+        .card-value {
+            font-size: clamp(32px, 8vw, 48px); font-weight: 700;
+            background: linear-gradient(90deg, #ff6b9d, #c084fc);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .card-sub {
+            font-size: 13px; color: rgba(255,255,255,0.3); margin-top: 8px;
+        }
+
+        .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; margin-top: 16px; }
+        .bar {
+            flex: 1; border-radius: 4px 4px 0 0;
+            background: linear-gradient(to top, #ff6b9d, #c084fc);
+            transition: height 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative; min-width: 20px;
+        }
+        .bar-label {
+            position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+            font-size: 10px; color: rgba(255,255,255,0.3); white-space: nowrap;
+        }
+
+        .ring-container { display: flex; justify-content: center; margin-top: 16px; }
+        .ring { width: 120px; height: 120px; position: relative; }
+        .ring svg { transform: rotate(-90deg); }
+        .ring-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 8; }
+        .ring-fill {
+            fill: none; stroke: url(#ringGrad); stroke-width: 8;
+            stroke-linecap: round; stroke-dasharray: 339.292;
+            stroke-dashoffset: 339.292;
+            transition: stroke-dashoffset 2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .ring-text {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+        .ring-number { font-size: 28px; font-weight: 700; color: #ff6b9d; }
+        .ring-label { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+        .heartbeat-canvas { width: 100%; height: 80px; margin-top: 16px; }
+
+        .timeline { margin-top: 16px; }
+        .timeline-item {
+            display: flex; gap: 12px; padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .timeline-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #ff6b9d; margin-top: 6px; flex-shrink: 0;
+        }
+        .timeline-text { font-size: 13px; color: rgba(255,255,255,0.6); }
+        .timeline-date { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 4px; }
+
+        .cta-section { text-align: center; padding: 60px 20px 80px; }
+        .cta-text {
+            font-size: clamp(20px, 5vw, 36px); font-weight: 300;
+            letter-spacing: 4px; color: rgba(255,255,255,0.7);
+            opacity: 0; transform: translateY(20px);
+            transition: all 1.5s ease;
+        }
+        .cta-text.visible { opacity: 1; transform: translateY(0); }
+        .cta-sub {
+            font-size: 14px; color: rgba(255,255,255,0.3);
+            letter-spacing: 2px; margin-top: 16px;
+            opacity: 0; transition: opacity 2s ease 0.5s;
+        }
+        .cta-sub.visible { opacity: 1; }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div class="dashboard-header">
+        <h1>恋爱数据看板</h1>
+        <p>REAL-TIME LOVE ANALYTICS</p>
+    </div>
+
+    <div class="grid">
+        <div class="card" data-anim>
+            <div class="card-title">实时心跳</div>
+            <div class="card-value" id="heartRate">--</div>
+            <div class="card-sub">BPM — 想到你时的频率</div>
+            <canvas class="heartbeat-canvas" id="heartCanvas"></canvas>
+        </div>
+
+        <div class="card" data-anim>
+            <div class="card-title">心动指数</div>
+            <div class="ring-container">
+                <div class="ring">
+                    <svg viewBox="0 0 120 120">
+                        <defs>
+                            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#ff6b9d"/>
+                                <stop offset="100%" stop-color="#c084fc"/>
+                            </linearGradient>
+                        </defs>
+                        <circle class="ring-bg" cx="60" cy="60" r="54"/>
+                        <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="54"/>
+                    </svg>
+                    <div class="ring-text">
+                        <div class="ring-number" id="ringNumber">0</div>
+                        <div class="ring-label">/ 100</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-sub" style="text-align:center; margin-top: 16px;">满分 100，当前已溢出</div>
+        </div>
+
+        <div class="card" data-anim>
+            <div class="card-title">每日想念次数</div>
+            <div class="bar-chart" id="barChart"></div>
+        </div>
+
+        <div class="card" data-anim>
+            <div class="card-title">恋爱统计</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div><div class="card-value" style="font-size:clamp(24px,6vw,36px);" id="statDays">0</div><div class="card-sub">想你的天数</div></div>
+                <div><div class="card-value" style="font-size:clamp(24px,6vw,36px);" id="statMessages">0</div><div class="card-sub">未发送的消息</div></div>
+                <div><div class="card-value" style="font-size:clamp(24px,6vw,36px);" id="statSmiles">0</div><div class="card-sub">因为你笑的次数</div></div>
+                <div><div class="card-value" style="font-size:clamp(24px,6vw,36px);">∞</div><div class="card-sub">为你心动的次数</div></div>
+            </div>
+        </div>
+
+        <div class="card" data-anim style="grid-column: 1 / -1;">
+            <div class="card-title">恋爱时间线</div>
+            <div class="timeline">
+                <div class="timeline-item"><div class="timeline-dot"></div><div><div class="timeline-text">第一次注意到你的笑容</div><div class="timeline-date">那一天，阳光很好</div></div></div>
+                <div class="timeline-item"><div class="timeline-dot"></div><div><div class="timeline-text">开始期待每一条消息</div><div class="timeline-date">手机成了最让人心跳加速的东西</div></div></div>
+                <div class="timeline-item"><div class="timeline-dot"></div><div><div class="timeline-text">发现自己会在人群中找你</div><div class="timeline-date">眼睛有了自己的导航系统</div></div></div>
+                <div class="timeline-item"><div class="timeline-dot" style="background:#c084fc;box-shadow:0 0 10px #c084fc;"></div><div><div class="timeline-text" style="color:#c084fc;">决定把这份心意告诉你</div><div class="timeline-date">就是现在</div></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cta-section">
+        <div class="cta-text" data-anim>数据不会说谎，我喜欢你</div>
+        <div class="cta-sub" data-anim>以上数据样本量：每一天</div>
+    </div>
+
+    <script>
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('[data-anim]').forEach(el => observer.observe(el));
+
+        function animateNumber(el, target, duration = 2000) {
+            const start = performance.now();
+            function update(now) {
+                const p = Math.min((now - start) / duration, 1);
+                const ease = 1 - Math.pow(1 - p, 3);
+                el.textContent = Math.round(target * ease).toLocaleString();
+                if (p < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        setTimeout(() => animateNumber(document.getElementById('heartRate'), 120), 500);
+        setTimeout(() => animateNumber(document.getElementById('statDays'), 365), 800);
+        setTimeout(() => animateNumber(document.getElementById('statMessages'), 999), 1100);
+        setTimeout(() => animateNumber(document.getElementById('statSmiles'), 2048), 1400);
+
+        setTimeout(() => {
+            document.getElementById('ringFill').style.strokeDashoffset = '33.929';
+            animateNumber(document.getElementById('ringNumber'), 99, 2000);
+        }, 1000);
+
+        const days = ['周一','周二','周三','周四','周五','周六','周日'];
+        const values = [65, 78, 52, 90, 85, 100, 95];
+        const barChart = document.getElementById('barChart');
+        days.forEach((d, i) => {
+            const bar = document.createElement('div');
+            bar.className = 'bar'; bar.style.height = '0';
+            bar.innerHTML = `<span class="bar-label">${d}</span>`;
+            barChart.appendChild(bar);
+            setTimeout(() => { bar.style.height = (values[i] / 100 * 100) + 'px'; }, 1200 + i * 150);
+        });
+
+        const canvas = document.getElementById('heartCanvas');
+        const ctx = canvas.getContext('2d');
+        function resizeHeart() { canvas.width = canvas.offsetWidth * 2; canvas.height = canvas.offsetHeight * 2; ctx.scale(2, 2); }
+        resizeHeart();
+
+        let offset = 0;
+        function drawHeartbeat() {
+            const w = canvas.offsetWidth; const h = canvas.offsetHeight;
+            ctx.clearRect(0, 0, w, h);
+            ctx.beginPath(); ctx.strokeStyle = '#ff6b9d'; ctx.lineWidth = 1.5;
+            ctx.shadowColor = '#ff6b9d'; ctx.shadowBlur = 5;
+            for (let i = 0; i < w; i++) {
+                const phase = (i + offset) % 80;
+                let y = h / 2;
+                if (phase < 10) y -= Math.sin(phase / 10 * Math.PI) * 25;
+                else if (phase < 15) y += Math.sin((phase - 10) / 5 * Math.PI) * 12;
+                else if (phase < 20) y -= Math.sin((phase - 15) / 5 * Math.PI) * 18;
+                i === 0 ? ctx.moveTo(i, y) : ctx.lineTo(i, y);
+            }
+            ctx.stroke(); ctx.shadowBlur = 0;
+            offset += 0.5;
+            requestAnimationFrame(drawHeartbeat);
+        }
+        drawHeartbeat();
+    </script>
+</body>
+</html>

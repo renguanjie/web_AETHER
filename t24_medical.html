@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>心跳诊断报告</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden;
+            background: #f5f7fa;
+            font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+            color: #333;
+        }
+        .report-container {
+            max-width: 600px; margin: 0 auto; padding: 20px;
+            opacity: 0; animation: reportIn 1s ease 0.3s forwards;
+        }
+        @keyframes reportIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .report-header {
+            background: #fff; border-radius: 16px; padding: 24px;
+            margin-bottom: 16px; border: 1px solid #e8eaed;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .hospital-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: #fff;
+        }
+        .logo-text { font-size: 16px; font-weight: 600; color: #1a1a2e; }
+        .logo-sub { font-size: 11px; color: #888; letter-spacing: 1px; }
+        .report-title { font-size: 20px; font-weight: 600; color: #1a1a2e; margin-bottom: 8px; }
+        .report-meta { font-size: 12px; color: #888; line-height: 1.8; }
+        .report-meta span { color: #555; font-weight: 500; }
+
+        .section {
+            background: #fff; border-radius: 16px; padding: 24px;
+            margin-bottom: 16px; border: 1px solid #e8eaed;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            opacity: 0; transform: translateY(15px);
+        }
+        .section.visible { animation: secIn 0.6s ease forwards; }
+        @keyframes secIn { to { opacity: 1; transform: translateY(0); } }
+        .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+        .section-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; font-size: 16px;
+        }
+        .section-title { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+
+        .result-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid #f0f0f0;
+        }
+        .result-item:last-child { border-bottom: none; }
+        .result-label { font-size: 13px; color: #555; }
+        .result-value { font-size: 14px; font-weight: 600; }
+        .result-value.normal { color: #4caf50; }
+        .result-value.warning { color: #ff9800; }
+        .result-value.danger { color: #f44336; }
+
+        .diagnosis-box {
+            background: #fff8f8; border: 1px solid #ffcdd2;
+            border-radius: 12px; padding: 16px;
+        }
+        .diagnosis-title {
+            font-size: 12px; color: #f44336; font-weight: 600;
+            letter-spacing: 2px; margin-bottom: 10px;
+        }
+        .diagnosis-text { font-size: 15px; color: #333; line-height: 1.8; }
+        .diagnosis-text strong { color: #f44336; }
+        .status-badge {
+            display: inline-block; padding: 2px 10px;
+            border-radius: 12px; font-size: 11px; font-weight: 600;
+        }
+        .status-badge.critical { background: #fce4ec; color: #c62828; }
+
+        .prescription-box {
+            background: #f3f0ff; border: 1px solid #d1c4e9;
+            border-radius: 12px; padding: 16px;
+        }
+        .rx-title {
+            font-size: 12px; color: #7c4dff; font-weight: 600;
+            letter-spacing: 2px; margin-bottom: 10px;
+        }
+        .rx-text { font-size: 15px; color: #333; line-height: 2; }
+
+        .heartbeat-canvas { width: 100%; height: 80px; margin: 12px 0; }
+
+        .signature-area { text-align: center; padding: 20px; opacity: 0; }
+        .signature-area.visible { animation: secIn 0.8s ease forwards; }
+
+        .sig-btn {
+            padding: 16px 48px;
+            background: linear-gradient(135deg, #ff6b9d, #c084fc);
+            border: none; border-radius: 30px;
+            color: #fff; font-size: 16px; letter-spacing: 3px;
+            cursor: pointer; font-family: inherit; transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(255, 107, 157, 0.3);
+        }
+        .sig-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 107, 157, 0.4);
+        }
+
+        #congrats {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, rgba(255,240,245,0.98), rgba(255,250,252,0.98));
+            z-index: 100; opacity: 0; pointer-events: none;
+            transition: opacity 1s ease;
+        }
+        #congrats.visible { opacity: 1; pointer-events: auto; }
+        .congrats-heart { font-size: 60px; animation: heartbeat 1s ease-in-out infinite; }
+        @keyframes heartbeat {
+            0%,100% { transform: scale(1); }
+            15% { transform: scale(1.15); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.1); }
+        }
+        .congrats-text {
+            font-size: clamp(20px, 5vw, 30px);
+            color: #333; letter-spacing: 4px; font-weight: 300;
+            margin-top: 20px; text-align: center; line-height: 1.8;
+            opacity: 0; animation: rise 1.5s ease 0.5s forwards;
+        }
+        .congrats-text .pink { color: #ff6b9d; font-weight: 500; }
+        .congrats-sub {
+            font-size: 12px; color: #999; letter-spacing: 3px; margin-top: 14px;
+            opacity: 0; animation: rise 1.5s ease 1.5s forwards;
+        }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loading-overlay {
+            position: fixed; inset: 0;
+            background: rgba(245,247,250,0.98);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 50; transition: opacity 0.8s ease;
+        }
+        .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #7c4dff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin-bottom: 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-size: 13px; color: #888; letter-spacing: 2px; }
+
+        .confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 99; overflow: hidden; }
+        .confetti {
+            position: absolute; width: 8px; height: 8px; top: -10px;
+            animation: confettiFall 3s ease-in forwards;
+        }
+        @keyframes confettiFall {
+            to { top: 110%; transform: rotate(720deg); }
+        }
+
+        @media (max-width: 600px) {
+            .report-container { padding: 12px; }
+            .report-header, .section { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">正在调取 RAG 知识库诊断结果...</div>
+    </div>
+
+    <div class="report-container" id="report">
+        <div class="report-header">
+            <div class="hospital-logo">
+                <div class="logo-icon">&#10084;</div>
+                <div>
+                    <div class="logo-text">心动医学中心</div>
+                    <div class="logo-sub">HEARTBEAT MEDICAL CENTER</div>
+                </div>
+            </div>
+            <div class="report-title">个人体检诊断书</div>
+            <div class="report-meta">
+                <span>患者：</span>屏幕前的你<br>
+                <span>检查日期：</span><span id="today"></span><br>
+                <span>报告编号：</span>LOVE-520-1314
+            </div>
+        </div>
+
+        <div class="section" id="sec-vitals">
+            <div class="section-header">
+                <div class="section-icon" style="background:#e8f5e9;">&#128170;</div>
+                <div class="section-title">生命体征检测</div>
+            </div>
+            <div class="result-item">
+                <span class="result-label">心率</span>
+                <span class="result-value danger">120 BPM &uarr;</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">血压</span>
+                <span class="result-value warning">130/85 mmHg</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">体温</span>
+                <span class="result-value normal">36.8&deg;C</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">多巴胺水平</span>
+                <span class="result-value danger">严重超标 &uarr;&uarr;</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">血清素浓度</span>
+                <span class="result-value danger">异常偏高 &uarr;</span>
+            </div>
+        </div>
+
+        <div class="section" id="sec-ecg">
+            <div class="section-header">
+                <div class="section-icon" style="background:#e3f2fd;">&#128149;</div>
+                <div class="section-title">心电图分析</div>
+            </div>
+            <canvas id="ecg-canvas" class="heartbeat-canvas"></canvas>
+            <div class="result-item">
+                <span class="result-label">心律模式</span>
+                <span class="result-value danger">心动过速</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">触发原因</span>
+                <span class="result-value" style="color:#ff6b9d;">看到某人时</span>
+            </div>
+        </div>
+
+        <div class="section" id="sec-rag">
+            <div class="section-header">
+                <div class="section-icon" style="background:#fce4ec;">&#128269;</div>
+                <div class="section-title">RAG 知识库诊断</div>
+            </div>
+            <div class="diagnosis-box">
+                <div class="diagnosis-title">DIAGNOSIS</div>
+                <div class="diagnosis-text">
+                    <strong>病因：</strong>多巴胺分泌过剩，伴随持续性心动<br>
+                    <strong>症状：</strong>频繁想起某人、莫名嘴角上扬、夜间失眠反复查看聊天记录<br>
+                    <strong>严重程度：</strong><span class="status-badge critical">CRITICAL</span><br>
+                    <strong>病程判断：</strong>不可逆，且无自愈可能
+                </div>
+            </div>
+        </div>
+
+        <div class="section" id="sec-rx">
+            <div class="section-header">
+                <div class="section-icon" style="background:#ede7f6;">&#128138;</div>
+                <div class="section-title">处方建议</div>
+            </div>
+            <div class="prescription-box">
+                <div class="rx-title">Rx PRESCRIPTION</div>
+                <div class="rx-text">
+                    1. 立刻答应对方的表白<br>
+                    2. 每日保持见面，剂量不限<br>
+                    3. 长期服用"陪伴"药剂，终身持续<br>
+                    4. 禁止单独使用本药物，需与发送者共同服用
+                </div>
+            </div>
+        </div>
+
+        <div class="signature-area" id="sec-sign">
+            <div style="font-size:13px;color:#888;margin-bottom:16px;letter-spacing:2px;">同意治疗请点击签字</div>
+            <button class="sig-btn" id="agree-btn">&#10084; 我愿意</button>
+        </div>
+    </div>
+
+    <div id="congrats">
+        <div class="congrats-heart">&#10084;</div>
+        <div class="congrats-text">处方已生效<br><span class="pink">我们一起被治愈了</span></div>
+        <div class="congrats-sub">TREATMENT CONFIRMED &mdash; LOVE PROTOCOL ACTIVATED</div>
+    </div>
+    <div class="confetti-container" id="confetti"></div>
+
+    <script>
+        const now = new Date();
+        document.getElementById('today').textContent =
+            now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+
+        setTimeout(function() {
+            document.getElementById('loading').classList.add('hidden');
+            var sections = ['sec-vitals', 'sec-ecg', 'sec-rag', 'sec-rx', 'sec-sign'];
+            sections.forEach(function(id, i) {
+                setTimeout(function() {
+                    document.getElementById(id).classList.add('visible');
+                }, (i + 1) * 400);
+            });
+        }, 2000);
+
+        // ECG
+        var ecgCanvas = document.getElementById('ecg-canvas');
+        var ecgCtx = ecgCanvas.getContext('2d');
+        var ecgX = 0;
+
+        function resizeECG() {
+            var dpr = window.devicePixelRatio || 1;
+            var rect = ecgCanvas.getBoundingClientRect();
+            ecgCanvas.width = rect.width * dpr;
+            ecgCanvas.height = rect.height * dpr;
+            ecgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        resizeECG();
+        window.addEventListener('resize', resizeECG);
+
+        function drawECG() {
+            var w = ecgCanvas.getBoundingClientRect().width;
+            var h = ecgCanvas.getBoundingClientRect().height;
+            if (w === 0) { requestAnimationFrame(drawECG); return; }
+
+            ecgCtx.fillStyle = 'rgba(255,255,255,0.03)';
+            ecgCtx.fillRect(0, 0, w, h);
+
+            ecgCtx.strokeStyle = '#f44336';
+            ecgCtx.lineWidth = 2;
+            ecgCtx.shadowColor = '#f44336';
+            ecgCtx.shadowBlur = 6;
+
+            ecgCtx.beginPath();
+            for (var i = -5; i <= 0; i++) {
+                var x = ecgX + i * 2;
+                var phase = (ecgX % 60) / 60;
+                var y;
+                if (phase < 0.1) y = h / 2;
+                else if (phase < 0.15) y = h / 2 - 5;
+                else if (phase < 0.2) y = h / 2 + 5;
+                else if (phase < 0.25) y = h / 2 - h * 0.35;
+                else if (phase < 0.3) y = h / 2 + h * 0.15;
+                else if (phase < 0.35) y = h / 2 - 10;
+                else if (phase < 0.4) y = h / 2;
+                else y = h / 2 + Math.sin((phase - 0.4) * Math.PI * 2.5) * 3;
+
+                if (i === -5) ecgCtx.moveTo(x, y);
+                else ecgCtx.lineTo(x, y);
+            }
+            ecgCtx.stroke();
+            ecgCtx.shadowBlur = 0;
+
+            ecgX += 2;
+            if (ecgX > w + 10) { ecgX = 0; ecgCtx.clearRect(0, 0, w, h); }
+
+            requestAnimationFrame(drawECG);
+        }
+        drawECG();
+
+        function launchConfetti() {
+            var container = document.getElementById('confetti');
+            var colors = ['#ff6b9d', '#c084fc', '#4fc3f7', '#ffd54f', '#81c784', '#f48fb1'];
+            for (var i = 0; i < 50; i++) {
+                var c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random() * 100 + '%';
+                c.style.background = colors[Math.floor(Math.random() * colors.length)];
+                c.style.animationDelay = Math.random() * 2 + 's';
+                c.style.animationDuration = (2 + Math.random() * 2) + 's';
+                c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                c.style.width = (4 + Math.random() * 8) + 'px';
+                c.style.height = (4 + Math.random() * 8) + 'px';
+                container.appendChild(c);
+            }
+        }
+
+        document.getElementById('agree-btn').addEventListener('click', function() {
+            document.getElementById('congrats').classList.add('visible');
+            launchConfetti();
+            setTimeout(launchConfetti, 1000);
+        });
+    </script>
+</body>
+</html>

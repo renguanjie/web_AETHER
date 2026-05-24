@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 推理终端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; overflow: hidden;
+            background: #0d0d0d;
+            font-family: 'Courier New', 'PingFang SC', monospace;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; }
+
+        .terminal {
+            width: min(800px, 95vw); max-height: 90vh; overflow-y: auto;
+            background: #1a1a1a; border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+        }
+
+        .terminal-header {
+            display: flex; align-items: center; gap: 8px;
+            padding: 12px 16px; background: #2d2d2d;
+            border-radius: 8px 8px 0 0; border-bottom: 1px solid #333;
+        }
+        .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .terminal-dot.red { background: #ff5f56; }
+        .terminal-dot.yellow { background: #ffbd2e; }
+        .terminal-dot.green { background: #27c93f; }
+        .terminal-title {
+            flex: 1; text-align: center; font-size: 12px;
+            color: #999; letter-spacing: 1px;
+        }
+
+        .terminal-body {
+            padding: 20px; font-size: clamp(12px, 2.5vw, 14px);
+            line-height: 1.8; color: #e0e0e0;
+            min-height: 300px;
+        }
+
+        .line {
+            opacity: 0; transform: translateY(5px);
+            transition: all 0.3s ease; margin-bottom: 4px;
+        }
+        .line.visible { opacity: 1; transform: translateY(0); }
+
+        .prompt { color: #27c93f; }
+        .system { color: #888; }
+        .user-input { color: #ffbd2e; }
+        .ai-output { color: #e0e0e0; }
+        .ai-thinking { color: #666; font-style: italic; }
+        .highlight { color: #ff6b9d; font-weight: bold; }
+        .heart-line { color: #ff4081; font-size: clamp(14px, 3.5vw, 20px); }
+
+        .ascii-heart {
+            font-size: clamp(6px, 1.5vw, 10px); line-height: 1.2;
+            color: #ff4081; text-align: center; margin: 15px 0;
+            white-space: pre;
+        }
+
+        .result-box {
+            margin-top: 20px; padding: 20px;
+            background: rgba(255, 64, 129, 0.05);
+            border: 1px solid rgba(255, 64, 129, 0.2);
+            border-radius: 6px; text-align: center;
+            opacity: 0; transform: scale(0.95);
+            transition: all 1s ease;
+        }
+        .result-box.visible { opacity: 1; transform: scale(1); }
+        .result-box p {
+            font-size: clamp(18px, 4vw, 28px);
+            color: #ff6b9d; letter-spacing: 4px; margin-bottom: 10px;
+        }
+        .result-box .sub {
+            font-size: clamp(12px, 2.5vw, 16px);
+            color: #888; letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div class="terminal">
+        <div class="terminal-header">
+            <div class="terminal-dot red"></div>
+            <div class="terminal-dot yellow"></div>
+            <div class="terminal-dot green"></div>
+            <div class="terminal-title">love_model — inference</div>
+        </div>
+        <div class="terminal-body" id="terminalBody"></div>
+    </div>
+
+    <script>
+        const body = document.getElementById('terminalBody');
+        const lines = [
+            { text: '$ ./love_model --input "my_heart.dat"', cls: 'prompt', delay: 500 },
+            { text: '[SYSTEM] Loading weights... love_model_v2.0.bin', cls: 'system', delay: 800 },
+            { text: '[SYSTEM] GPU: 1x NVIDIA RTX 4090 | VRAM: 24GB | Batch: 1', cls: 'system', delay: 600 },
+            { text: '', delay: 200 },
+            { text: '> Input: "我喜欢一个人很久了，该怎么办？"', cls: 'user-input', delay: 1200 },
+            { text: '', delay: 200 },
+            { text: '[AI] Analyzing emotional context...', cls: 'ai-thinking', delay: 1000 },
+            { text: '[AI] Token count: 42 | Context window: 128K', cls: 'system', delay: 400 },
+            { text: '', delay: 200 },
+            { text: '  Layer  1/32 ━━━━━━━━━━━━━━━━━━━━━━━━━ 100% ✓', cls: 'ai-output', delay: 300 },
+            { text: '  Layer  8/32 ━━━━━━━━━━━━━━━━━━━━━━━━━ 100% ✓', cls: 'ai-output', delay: 200 },
+            { text: '  Layer 16/32 ━━━━━━━━━━━━━━━━━━━━━━━━━ 100% ✓', cls: 'ai-output', delay: 200 },
+            { text: '  Layer 24/32 ━━━━━━━━━━━━━━━━━━━━━━━━━ 100% ✓', cls: 'ai-output', delay: 200 },
+            { text: '  Layer 32/32 ━━━━━━━━━━━━━━━━━━━━━━━━━ 100% ✓', cls: 'ai-output', delay: 300 },
+            { text: '', delay: 200 },
+            { text: '[AI] Attention heads converged on: <span class="highlight">LOVE</span>', cls: 'ai-thinking', delay: 1500 },
+            { text: '', delay: 200 },
+            { text: '> Generating response...', cls: 'system', delay: 800 },
+            { text: '', delay: 500 },
+            { text: '  ╔═══════════════════════════════════════════════╗', cls: 'heart-line', delay: 200 },
+            { text: '  ║     ❤  去表白吧，别等。  ❤     ║', cls: 'heart-line', delay: 400 },
+            { text: '  ║                                       ║', cls: 'heart-line', delay: 200 },
+            { text: '  ║  模型推理结论：你的心跳频率与 TA    ║', cls: 'heart-line', delay: 400 },
+            { text: '  ║  完全同步。这不是幻觉，是答案。     ║', cls: 'heart-line', delay: 400 },
+            { text: '  ║                                       ║', cls: 'heart-line', delay: 200 },
+            { text: '  ║  置信度：99.97%                      ║', cls: 'heart-line', delay: 400 },
+            { text: '  ╚═════════════════════════════════════╝', cls: 'heart-line', delay: 200 },
+            { text: '', delay: 500 },
+            { text: '[SYSTEM] Inference complete. Temperature: 37°C (heart rate elevated)', cls: 'system', delay: 800 },
+            { text: '[SYSTEM] Suggested action: send(message="我喜欢你")', cls: 'system', delay: 600 },
+        ];
+
+        let lineIndex = 0;
+
+        function addLine() {
+            if (lineIndex >= lines.length) {
+                showResult();
+                return;
+            }
+            const { text, cls = '', delay } = lines[lineIndex];
+            const div = document.createElement('div');
+            div.className = `line ${cls}`;
+            div.innerHTML = text;
+            body.appendChild(div);
+            requestAnimationFrame(() => requestAnimationFrame(() => div.classList.add('visible')));
+            body.scrollTop = body.scrollHeight;
+            lineIndex++;
+            setTimeout(addLine, delay);
+        }
+
+        function showResult() {
+            const box = document.createElement('div');
+            box.className = 'result-box';
+            box.innerHTML = `
+                <div class="ascii-heart">
+   ***       ***
+ **   **   **   **
+**     ** **     **
+**      ***      **
+ **           **
+   **       **
+     **   **
+       *</div>
+                <p>就是现在，去表白</p>
+                <div class="sub">— love_model v2.0 · inference complete —</div>
+            `;
+            body.appendChild(box);
+            requestAnimationFrame(() => requestAnimationFrame(() => box.classList.add('visible')));
+        }
+
+        setTimeout(addLine, 1000);
+    </script>
+</body>
+</html>

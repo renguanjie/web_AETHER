@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>聊天记录</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow-y: auto; background: #0a0a0f; font-family: -apple-system, 'PingFang SC', sans-serif; }
+        .chat-page { max-width: 400px; margin: 0 auto; min-height: 100vh; background: #0d0d15; padding: 20px; }
+        .chat-header { text-align: center; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+        .chat-name { font-size: 15px; color: #fff; font-weight: 600; }
+        .chat-status { font-size: 10px; color: #4caf50; margin-top: 2px; }
+        .chat-messages { display: flex; flex-direction: column; gap: 12px; padding-bottom: 80px; }
+        .bubble { max-width: 75%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.6; opacity: 0; transform: translateY(10px); animation: bubbleIn 0.5s ease forwards; }
+        .bubble.sent { align-self: flex-end; background: linear-gradient(135deg, #ff6b9d, #c084fc); color: #fff; border-bottom-right-radius: 4px; }
+        .bubble.received { align-self: flex-start; background: rgba(255,255,255,0.08); color: #fff; border-bottom-left-radius: 4px; }
+        .bubble .time { font-size: 9px; opacity: 0.5; margin-top: 4px; }
+        @keyframes bubbleIn { to { opacity: 1; transform: translateY(0); } }
+        .input-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(13,13,21,0.95); padding: 12px 20px; display: flex; gap: 8px; align-items: center; backdrop-filter: blur(10px); }
+        .input-bar input { flex: 1; padding: 10px 16px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: #fff; font-size: 14px; outline: none; font-family: inherit; }
+        .input-bar button { padding: 10px 16px; background: linear-gradient(135deg, #ff6b9d, #c084fc); border: none; border-radius: 20px; color: #fff; font-size: 14px; cursor: pointer; }
+        .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at center, rgba(20,10,30,0.97), rgba(0,0,0,0.99)); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 1.5s ease; }
+        .overlay.visible { opacity: 1; pointer-events: auto; }
+        .overlay-text { font-size: clamp(18px, 4vw, 28px); color: #fff; letter-spacing: 4px; text-align: center; opacity: 0; animation: rise 1.5s ease 0.5s forwards; }
+        .overlay-text .pink { color: #ff6b9d; }
+        .overlay-sub { font-size: 11px; color: #555; letter-spacing: 3px; margin-top: 14px; opacity: 0; animation: rise 1.5s ease 1.5s forwards; }
+        @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="chat-page">
+        <div class="chat-header"><div class="chat-name">&#128149; 你</div><div class="chat-status">正在输入中...</div></div>
+        <div class="chat-messages" id="messages"></div>
+    </div>
+    <div class="input-bar">
+        <input type="text" id="chat-input" placeholder="回复消息...">
+        <button id="send-btn">&#10148;</button>
+    </div>
+    <div class="overlay" id="overlay">
+        <div class="overlay-text">聊天记录有 999+ 条<br><span class="pink">最想让你看到的是这一句</span></div>
+        <div class="overlay-sub">CHAT HISTORY — MESSAGE OF A LIFETIME</div>
+    </div>
+    <script>
+        var msgs = [
+            { t: 'sent', x: '在吗？', d: 500 },
+            { t: 'received', x: '在呀，怎么啦？', d: 1500 },
+            { t: 'sent', x: '没事，就是想你了', d: 3000 },
+            { t: 'received', x: '哈哈，我也想你了', d: 4500 },
+            { t: 'sent', x: '真的吗？', d: 6000 },
+            { t: 'received', x: '真的！每次和你聊天都好开心', d: 7500 },
+            { t: 'sent', x: '其实我有个事想跟你说', d: 10000 },
+            { t: 'received', x: '什么？你说吧', d: 11500 },
+            { t: 'sent', x: '我喜欢你，不是一时兴起，是蓄谋已久', d: 14000 },
+        ];
+        var container = document.getElementById('messages'), idx = 0;
+        function showNext() {
+            if (idx >= msgs.length) { setTimeout(function() { document.getElementById('overlay').classList.add('visible'); }, 2000); return; }
+            var m = msgs[idx], b = document.createElement('div');
+            b.className = 'bubble ' + m.t;
+            b.innerHTML = m.x + '<div class="time">' + new Date().getHours() + ':' + String(new Date().getMinutes()).padStart(2, '0') + '</div>';
+            container.appendChild(b); container.scrollTop = container.scrollHeight; idx++;
+            setTimeout(showNext, idx < msgs.length ? msgs[idx].d - m.d : 3000);
+        }
+        setTimeout(showNext, 800);
+        document.getElementById('send-btn').addEventListener('click', sendCustom);
+        document.getElementById('chat-input').addEventListener('keypress', function(e) { if (e.key === 'Enter') sendCustom(); });
+        function sendCustom() {
+            var input = document.getElementById('chat-input'), text = input.value.trim();
+            if (!text) return; input.value = '';
+            var b = document.createElement('div'); b.className = 'bubble sent'; b.textContent = text;
+            container.appendChild(b); container.scrollTop = container.scrollHeight;
+            setTimeout(function() {
+                var replies = ['我也喜欢你 ❤️', '终于等到这句话了', '那...我们在一起吧？', '好巧，我也是'];
+                var r = document.createElement('div'); r.className = 'bubble received'; r.textContent = replies[Math.floor(Math.random() * replies.length)];
+                container.appendChild(r); container.scrollTop = container.scrollHeight;
+            }, 1500);
+        }
+    </script>
+</body>
+</html>

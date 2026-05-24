@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOVE_PROTOCOL // INITIALIZING...</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000; min-height: 100vh; overflow: hidden;
+            font-family: 'Courier New', 'Consolas', monospace; color: #00ff41;
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: #00d4ff; text-decoration: none; font-size: 13px;
+            padding: 8px 16px; border: 1px solid rgba(0,212,255,0.3);
+            border-radius: 4px; font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+        .back-btn:hover { background: rgba(0,212,255,0.1); }
+
+        #cursor {
+            position: fixed; width: 8px; height: 8px;
+            background: #00ff41; border-radius: 50%;
+            box-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41;
+            pointer-events: none; z-index: 99;
+            transition: transform 0.1s ease-out;
+        }
+
+        #terminal {
+            position: fixed; inset: 0; z-index: 10;
+            padding: 40px; overflow: hidden;
+            display: flex; flex-direction: column; justify-content: flex-start;
+        }
+        .term-line {
+            font-size: clamp(12px, 2.5vw, 16px); line-height: 1.8;
+            opacity: 0; transform: translateX(-10px);
+            transition: all 0.3s;
+            text-shadow: 0 0 5px #00ff41;
+            white-space: pre;
+        }
+        .term-line.visible { opacity: 1; transform: translateX(0); }
+        .term-line .ok { color: #00ff41; }
+        .term-line .warn { color: #ff0080; text-shadow: 0 0 5px #ff0080; }
+        .term-line .info { color: #00d4ff; text-shadow: 0 0 5px #00d4ff; }
+        .term-line .highlight {
+            color: #ff0080; font-weight: bold;
+            text-shadow: 0 0 10px #ff0080;
+        }
+
+        #asciiHeart {
+            position: fixed; inset: 0; z-index: 20;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 1.5s;
+        }
+        #asciiHeart.active { opacity: 1; }
+
+        .ascii-art {
+            font-size: clamp(8px, 2vw, 18px); line-height: 1.2;
+            white-space: pre; color: #ff0080;
+            text-shadow: 0 0 5px #ff0080, 0 0 15px rgba(255,0,128,0.5);
+        }
+        .love-message {
+            margin-top: 30px; font-size: clamp(14px, 3vw, 22px);
+            color: #00d4ff;
+            text-shadow: 0 0 5px #00d4ff;
+            letter-spacing: 3px; text-align: center;
+        }
+
+        #timer {
+            position: fixed; bottom: 30px; left: 50%;
+            transform: translateX(-50%); z-index: 25;
+            font-size: clamp(14px, 3vw, 20px);
+            color: #00ff41;
+            text-shadow: 0 0 5px #00ff41;
+            letter-spacing: 2px; opacity: 0; transition: opacity 1s;
+        }
+        #timer.visible { opacity: 1; }
+
+        #flash {
+            position: fixed; inset: 0; z-index: 15;
+            background: #fff; opacity: 0; pointer-events: none;
+            transition: opacity 0.1s;
+        }
+        #scanline {
+            position: fixed; inset: 0; z-index: 5; pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg, transparent, transparent 2px,
+                rgba(0,255,65,0.015) 2px, rgba(0,255,65,0.015) 4px
+            );
+        }
+    </style>
+</head>
+<body>
+    <div id="cursor"></div>
+    <div id="scanline"></div>
+    <div id="flash"></div>
+
+    <a href="portal.html" class="back-btn">&lt;/&gt; PORTAL</a>
+
+    <div id="terminal"></div>
+    <div id="asciiHeart">
+        <pre class="ascii-art" id="artText"></pre>
+        <div class="love-message" id="loveMsg"></div>
+    </div>
+    <div id="timer"></div>
+
+    <script>
+        // Neon cursor
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', e => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        const lines = [
+            { text: '$ ./love_protocol.sh --init', cls: '' },
+            { text: '' },
+            { text: '> Initializing love detection module...' },
+            { text: '> Scanning core_heartbeat........... ', delay: 800 },
+            { text: '[OK]', cls: 'ok', delay: 600 },
+            { text: '' },
+            { text: '> Analyzing emotional patterns...' },
+            { text: '> Dopamine level: ' },
+            { text: 'CRITICAL', cls: 'warn', delay: 500 },
+            { text: '> Serotonin level: ' },
+            { text: 'ELEVATED', cls: 'warn', delay: 400 },
+            { text: '' },
+            { text: '> Establishing secure connection...' },
+            { text: '> Handshake protocol: ', delay: 600 },
+            { text: 'SYN -> ACK -> SYN-ACK', cls: 'info' },
+            { text: '' },
+            { text: '> Encryption: ' },
+            { text: 'AES-256-HEART', cls: 'info' },
+            { text: '' },
+            { text: '> Building connection pipeline:' },
+            { text: '> [████████████████████████████████] 100%', cls: 'ok', delay: 1500 },
+            { text: '' },
+            { text: '> Heart sync status: ', delay: 400 },
+            { text: 'SUCCESS', cls: 'highlight' },
+            { text: '' },
+            { text: '> Revealing classified message...', cls: 'info', delay: 1000 },
+        ];
+
+        const terminal = document.getElementById('terminal');
+
+        function addLine(obj, cb) {
+            const div = document.createElement('div');
+            div.className = 'term-line';
+            div.textContent = obj.text;
+            if (obj.cls) div.classList.add(obj.cls);
+            terminal.appendChild(div);
+            requestAnimationFrame(() => {
+                div.classList.add('visible');
+                setTimeout(cb, obj.delay || 200);
+            });
+        }
+
+        function runTerminal(idx) {
+            if (idx >= lines.length) { setTimeout(revealHeart, 500); return; }
+            addLine(lines[idx], () => runTerminal(idx + 1));
+        }
+
+        function flash() {
+            const el = document.getElementById('flash');
+            el.style.opacity = '0.8';
+            setTimeout(() => el.style.opacity = '0', 100);
+            setTimeout(() => { el.style.opacity = '0.3'; setTimeout(() => el.style.opacity = '0', 80); }, 150);
+        }
+
+        const heartArt = `
+    **       **
+  *    *   *    *
+ *        *        *
+ *                 *
+  *               *
+   *             *
+    *           *
+      *       *
+        *   *
+          *
+`;
+
+        function revealHeart() {
+            flash();
+            setTimeout(() => {
+                terminal.style.opacity = '0';
+                terminal.style.transition = 'opacity 1s';
+                setTimeout(() => {
+                    document.getElementById('asciiHeart').classList.add('active');
+                    document.getElementById('artText').textContent = heartArt;
+                    const msgEl = document.getElementById('loveMsg');
+                    const msg = 'CONNECTION_ESTABLISHED';
+                    let mi = 0;
+                    function typeMsg() {
+                        if (mi < msg.length) {
+                            msgEl.textContent += msg[mi]; mi++;
+                            setTimeout(typeMsg, 80);
+                        } else {
+                            document.getElementById('timer').classList.add('visible');
+                            startTimer();
+                        }
+                    }
+                    setTimeout(typeMsg, 800);
+                }, 500);
+            }, 300);
+        }
+
+        const startTime = Date.now();
+        function startTimer() {
+            const timer = document.getElementById('timer');
+            function update() {
+                const e = Date.now() - startTime;
+                const d = Math.floor(e/86400000);
+                const h = Math.floor((e%86400000)/3600000);
+                const m = Math.floor((e%3600000)/60000);
+                const s = Math.floor((e%60000)/1000);
+                const ms = e % 1000;
+                timer.textContent = `LOVE_UPTIME: ${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
+                requestAnimationFrame(update);
+            }
+            update();
+        }
+
+        setTimeout(() => runTerminal(0), 1000);
+    </script>
+</body>
+</html>

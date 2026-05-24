@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>航班追踪：心动</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow-y: auto;
+            background: #0f1923;
+            font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+            color: #fff;
+        }
+        .flight-page { max-width: 500px; margin: 0 auto; min-height: 100vh; padding: 20px; }
+        .flight-header { text-align: center; padding: 20px 0; }
+        .flight-code { font-size: 32px; font-weight: 200; letter-spacing: 4px; color: #4fc3f7; }
+        .flight-status { font-size: 12px; color: #4caf50; margin-top: 6px; letter-spacing: 2px; }
+        .flight-status.on-time::before { content: '● '; }
+
+        .route-display {
+            display: flex; align-items: center; justify-content: center;
+            padding: 30px 0; gap: 20px;
+        }
+        .city { text-align: center; }
+        .city-code { font-size: 28px; font-weight: 700; letter-spacing: 2px; }
+        .city-name { font-size: 12px; color: #888; margin-top: 4px; }
+        .route-line {
+            flex: 1; max-width: 150px; text-align: center; position: relative;
+        }
+        .route-line::before {
+            content: ''; position: absolute; top: 50%; left: 0; right: 0;
+            height: 1px; background: rgba(255,255,255,0.2);
+        }
+        .route-plane {
+            position: relative; z-index: 1; font-size: 24px;
+            animation: flyPlane 3s ease-in-out infinite;
+        }
+        @keyframes flyPlane {
+            0%,100% { transform: translateX(-20px); }
+            50% { transform: translateX(20px); }
+        }
+        .route-duration { font-size: 10px; color: #666; margin-top: 6px; }
+
+        .flight-info-cards {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 10px; padding: 10px 0;
+        }
+        .info-card {
+            background: rgba(255,255,255,0.05); border-radius: 12px; padding: 14px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .info-label { font-size: 10px; color: #666; letter-spacing: 1px; margin-bottom: 4px; }
+        .info-value { font-size: 15px; font-weight: 600; }
+        .info-value.pink { color: #ff6b9d; }
+        .info-value.blue { color: #4fc3f7; }
+        .info-value.green { color: #4caf50; }
+
+        .progress-section { padding: 20px 0; }
+        .progress-label { font-size: 11px; color: #666; letter-spacing: 2px; margin-bottom: 10px; }
+        .progress-bar {
+            height: 6px; background: rgba(255,255,255,0.1);
+            border-radius: 3px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #4fc3f7, #ff6b9d);
+            border-radius: 3px; transition: width 0.5s ease;
+        }
+        .progress-text { font-size: 11px; color: #555; margin-top: 6px; text-align: right; }
+
+        .arrival-overlay {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, rgba(20,10,30,0.97), rgba(0,0,0,0.99));
+            z-index: 100; opacity: 0; pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+        .arrival-overlay.visible { opacity: 1; pointer-events: auto; }
+        .arrival-text {
+            font-size: clamp(18px, 4vw, 28px); color: #fff;
+            letter-spacing: 4px; font-weight: 200; text-align: center;
+            opacity: 0; animation: rise 1.5s ease 0.5s forwards;
+        }
+        .arrival-text .pink { color: #ff6b9d; }
+        .arrival-sub {
+            font-size: 11px; color: #555; letter-spacing: 3px; margin-top: 14px;
+            opacity: 0; animation: rise 1.5s ease 1.5s forwards;
+        }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="flight-page">
+        <div class="flight-header">
+            <div class="flight-code">LOVE 520</div>
+            <div class="flight-status on-time">准时飞行中</div>
+        </div>
+
+        <div class="route-display">
+            <div class="city">
+                <div class="city-code">M</div>
+                <div class="city-name">我的世界</div>
+            </div>
+            <div class="route-line">
+                <div class="route-plane">&#9992;</div>
+                <div class="route-duration">forever</div>
+            </div>
+            <div class="city">
+                <div class="city-code" style="color:#ff6b9d;">Y</div>
+                <div class="city-name">你的心里</div>
+            </div>
+        </div>
+
+        <div class="flight-info-cards">
+            <div class="info-card"><div class="info-label">出发时间</div><div class="info-value blue">遇见你的那一刻</div></div>
+            <div class="info-card"><div class="info-label">预计到达</div><div class="info-value green">永远不晚</div></div>
+            <div class="info-card"><div class="info-label">飞行高度</div><div class="info-value pink">心动 9999m</div></div>
+            <div class="info-card"><div class="info-label">乘客姓名</div><div class="info-value">我 &rarr; 你</div></div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-label">飞行进度</div>
+            <div class="progress-bar"><div class="progress-fill" id="flight-progress"></div></div>
+            <div class="progress-text" id="flight-pct">0%</div>
+        </div>
+    </div>
+
+    <div class="arrival-overlay" id="arrival">
+        <div class="arrival-text">&#9992; 已降落<br><span class="pink">目的地：你的心里</span></div>
+        <div class="arrival-sub">FLIGHT LANDED — WELCOME HOME</div>
+    </div>
+
+    <script>
+        var pct = 0;
+        var bar = document.getElementById('flight-progress');
+        var pctEl = document.getElementById('flight-pct');
+
+        function animate() {
+            pct += 0.5 + Math.random() * 0.5;
+            if (pct >= 100) {
+                pct = 100;
+                bar.style.width = '100%';
+                pctEl.textContent = '100% — 已到达';
+                setTimeout(function() {
+                    document.getElementById('arrival').classList.add('visible');
+                }, 800);
+                return;
+            }
+            bar.style.width = pct + '%';
+            pctEl.textContent = Math.floor(pct) + '%';
+            setTimeout(animate, 100 + Math.random() * 100);
+        }
+        setTimeout(animate, 1000);
+    </script>
+</body>
+</html>

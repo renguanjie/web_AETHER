@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代码情书</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; background: #1e1e1e;
+            font-family: 'Courier New', 'PingFang SC', monospace;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; }
+
+        .editor {
+            width: min(750px, 95vw); background: #1e1e1e;
+            border-radius: 8px; overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .editor-header {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 16px; background: #2d2d2d; border-bottom: 1px solid #333;
+        }
+        .editor-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .editor-dot.red { background: #ff5f56; }
+        .editor-dot.yellow { background: #ffbd2e; }
+        .editor-dot.green { background: #27c93f; }
+        .editor-filename { flex: 1; text-align: center; font-size: 12px; color: #999; margin-left: -60px; }
+
+        .editor-body { display: flex; padding: 16px 0; max-height: 80vh; overflow-y: auto; }
+        .line-numbers {
+            padding: 0 12px 0 16px; text-align: right;
+            font-size: 13px; color: #555; line-height: 1.8;
+            user-select: none; border-right: 1px solid #333; min-width: 40px;
+        }
+        .code-area {
+            padding: 0 16px; font-size: clamp(12px, 2.5vw, 14px);
+            line-height: 1.8; flex: 1; overflow-x: auto;
+        }
+        .code-line {
+            opacity: 0; transform: translateX(-10px);
+            transition: all 0.4s ease; white-space: pre;
+        }
+        .code-line.visible { opacity: 1; transform: translateX(0); }
+
+        .kw { color: #569cd6; } .fn { color: #dcdcaa; } .str { color: #ce9178; }
+        .cm { color: #6a9955; } .var { color: #9cdcfe; } .num { color: #b5cea8; }
+        .op { color: #d4d4d4; } .cls { color: #4ec9b0; } .type { color: #4ec9b0; }
+
+        .reveal-overlay {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(0,0,0,0.9);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 1s ease;
+        }
+        .reveal-overlay.visible { opacity: 1; pointer-events: auto; }
+        .reveal-text {
+            font-size: clamp(24px, 6vw, 42px); color: #ff6b9d; letter-spacing: 6px;
+            opacity: 0; transform: translateY(20px);
+            transition: all 1.5s ease 0.5s; text-align: center;
+        }
+        .reveal-overlay.visible .reveal-text { opacity: 1; transform: translateY(0); }
+        .reveal-sub {
+            font-size: clamp(14px, 3vw, 20px); color: rgba(255,255,255,0.4);
+            letter-spacing: 3px; margin-top: 16px; text-align: center;
+            opacity: 0; transition: opacity 2s ease 1.5s;
+        }
+        .reveal-overlay.visible .reveal-sub { opacity: 1; }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+
+    <div class="editor">
+        <div class="editor-header">
+            <div class="editor-dot red"></div>
+            <div class="editor-dot yellow"></div>
+            <div class="editor-dot green"></div>
+            <div class="editor-filename">love.ts</div>
+        </div>
+        <div class="editor-body">
+            <div class="line-numbers" id="lineNumbers"></div>
+            <div class="code-area" id="codeArea"></div>
+        </div>
+    </div>
+
+    <div class="reveal-overlay" id="revealOverlay">
+        <div>
+            <div class="reveal-text">这段代码只有一行是真的</div>
+            <div class="reveal-sub">猜猜是哪一行？Hint: 全部都是</div>
+        </div>
+    </div>
+
+    <script>
+        const codeLines = [
+            { html: '<span class="kw">interface</span> <span class="cls">Heart</span> {', delay: 100 },
+            { html: '  <span class="var">beat</span><span class="op">:</span> <span class="type">number</span><span class="op">;</span>', delay: 80 },
+            { html: '  <span class="var">owner</span><span class="op">:</span> <span class="type">string</span><span class="op">;</span>', delay: 80 },
+            { html: '}', delay: 80 },
+            { html: '', delay: 40 },
+            { html: '<span class="cm">// 这个函数我写了很久</span>', delay: 600 },
+            { html: '<span class="kw">function</span> <span class="fn">confess</span><span class="op">(</span><span class="var">you</span><span class="op">:</span> <span class="cls">Heart</span><span class="op">)</span> {', delay: 200 },
+            { html: '  <span class="kw">while</span> <span class="op">(</span><span class="var">you</span><span class="op">.</span><span class="var">beat</span> <span class="op">&gt;</span> <span class="num">0</span><span class="op">)</span> {', delay: 150 },
+            { html: '    <span class="cm">// 每次心跳都在说同一件事</span>', delay: 500 },
+            { html: '    <span class="fn">console</span><span class="op">.</span><span class="fn">log</span><span class="op">(</span><span class="str">"我喜欢你"</span><span class="op">);</span>', delay: 200 },
+            { html: '  }', delay: 80 },
+            { html: '}', delay: 80 },
+            { html: '', delay: 40 },
+            { html: '<span class="cm">// 其实不需要循环</span>', delay: 600 },
+            { html: '<span class="cm">// 一次就够了</span>', delay: 500 },
+            { html: '', delay: 40 },
+            { html: '<span class="kw">const</span> <span class="var">myHeart</span><span class="op">: </span><span class="cls">Heart</span> <span class="op">=</span> {', delay: 200 },
+            { html: '  <span class="var">beat</span><span class="op">: </span><span class="num">Infinity</span><span class="op">,</span>', delay: 150 },
+            { html: '  <span class="var">owner</span><span class="op">: </span><span class="str">"你"</span><span class="op">,</span>', delay: 150 },
+            { html: '};', delay: 80 },
+            { html: '', delay: 40 },
+            { html: '<span class="fn">confess</span><span class="op">(</span><span class="var">myHeart</span><span class="op">);</span>', delay: 300 },
+            { html: '', delay: 40 },
+            { html: '<span class="cm">// 编译通过。没有错误。</span>', delay: 800 },
+            { html: '<span class="cm">// 因为你就是我的正确答案。</span>', delay: 800 },
+        ];
+
+        const lineNumbers = document.getElementById('lineNumbers');
+        const codeArea = document.getElementById('codeArea');
+        const revealOverlay = document.getElementById('revealOverlay');
+        let lineCount = 0;
+
+        function addCodeLine() {
+            if (lineCount >= codeLines.length) {
+                setTimeout(() => revealOverlay.classList.add('visible'), 2000);
+                return;
+            }
+            const { html, delay } = codeLines[lineCount];
+            const ln = document.createElement('div');
+            ln.textContent = lineCount + 1;
+            lineNumbers.appendChild(ln);
+            const div = document.createElement('div');
+            div.className = 'code-line';
+            if (html.includes('class="cm"')) div.classList.add('comment-line');
+            div.innerHTML = html || '&nbsp;';
+            codeArea.appendChild(div);
+            requestAnimationFrame(() => requestAnimationFrame(() => div.classList.add('visible')));
+            lineCount++;
+            setTimeout(addCodeLine, delay);
+        }
+
+        revealOverlay.addEventListener('click', (e) => {
+            if (e.target === revealOverlay) revealOverlay.classList.remove('visible');
+        });
+
+        setTimeout(addCodeLine, 500);
+    </script>
+</body>
+</html>

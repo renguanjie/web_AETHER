@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水彩情书</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            background: #faf8f5;
+        }
+        .back-btn {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            color: #c0392b; text-decoration: none; font-size: 12px;
+            padding: 6px 14px; border: 1px solid rgba(192,57,43,0.2);
+            border-radius: 15px; transition: all 0.3s;
+        }
+        .back-btn:hover { color: #D4AF37; }
+        canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+
+        #textOverlay {
+            position: fixed; inset: 0; z-index: 10;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            text-align: center; pointer-events: none;
+        }
+        .text-line {
+            font-family: 'Georgia', 'Noto Serif SC', serif;
+            font-size: clamp(22px, 5vw, 40px); color: rgba(192,57,43,0.85);
+            font-weight: 300; letter-spacing: 4px;
+            opacity: 0; transform: translateY(10px);
+            transition: all 2s ease;
+        }
+        .text-line.visible { opacity: 1; transform: translateY(0); }
+        .text-line:nth-child(2) { transition-delay: 0.8s; font-size: clamp(18px, 4vw, 32px); }
+        .text-line:nth-child(3) { transition-delay: 1.6s; font-size: clamp(16px, 3.5vw, 28px); color: rgba(120,100,180,0.7); }
+
+        #paperTexture {
+            position: fixed; inset: 0; z-index: 5; pointer-events: none; opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+            background-size: 512px;
+        }
+    </style>
+</head>
+<body>
+    <a href="portal.html" class="back-btn">&larr; 返回门户</a>
+    <canvas id="c"></canvas>
+    <div id="paperTexture"></div>
+    <div id="textOverlay">
+        <div class="text-line" data-anim>遇见你之前</div>
+        <div class="text-line" data-anim>世界是黑白的</div>
+        <div class="text-line" data-anim>你是那抹意外晕开的色彩</div>
+    </div>
+    <script>
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        let W, H, time = 0;
+
+        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+        resize(); window.addEventListener('resize', resize);
+
+        const blobs = [];
+        const colors = [
+            {r:255,g:182,b:193},{r:173,g:216,b:230},{r:255,g:160,b:180},
+            {r:150,g:180,b:220},{r:255,g:200,b:210}
+        ];
+        for (let i = 0; i < 8; i++) {
+            blobs.push({
+                x: W/2+(Math.random()-0.5)*W*0.4, y: H/2+(Math.random()-0.5)*H*0.3,
+                baseR: 60+Math.random()*120, color: colors[Math.floor(Math.random()*colors.length)],
+                phase: Math.random()*Math.PI*2, speed: 0.003+Math.random()*0.004, delay: i*600,
+            });
+        }
+
+        function drawBlob(b, p) {
+            if (p <= 0) return;
+            const r = b.baseR * p; const {color} = b; const a = 0.15 * p;
+            for (let j = 0; j < 5; j++) {
+                const ox = Math.sin(b.phase+j*1.2)*r*0.2;
+                const oy = Math.cos(b.phase+j*1.5)*r*0.15;
+                const w = r*(0.8+Math.sin(b.phase+j)*0.3);
+                const h = r*(0.6+Math.cos(b.phase+j*0.7)*0.2);
+                const grad = ctx.createRadialGradient(b.x+ox, b.y+oy, 0, b.x+ox, b.y+oy, Math.max(w,h));
+                grad.addColorStop(0, `rgba(${color.r},${color.g},${color.b},${a})`);
+                grad.addColorStop(0.5, `rgba(${color.r},${color.g},${color.b},${a*0.4})`);
+                grad.addColorStop(1, `rgba(${color.r},${color.g},${color.b},0)`);
+                ctx.fillStyle = grad; ctx.beginPath();
+                ctx.ellipse(b.x+ox, b.y+oy, w, h, b.phase+j*0.3, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        function animate() {
+            time++; ctx.clearRect(0, 0, W, H);
+            ctx.globalCompositeOperation = 'multiply';
+            for (const b of blobs) {
+                const elapsed = time*16.67 - b.delay;
+                const p = Math.max(0, Math.min(1, elapsed/3000));
+                drawBlob(b, p);
+            }
+            ctx.globalCompositeOperation = 'source-over';
+            if (time > 80) document.querySelectorAll('[data-anim]').forEach(el => el.classList.add('visible'));
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>

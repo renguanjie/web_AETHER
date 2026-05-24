@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Loss Curve's End</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background: #0a0a0f;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', 'PingFang SC', monospace;
+            color: #e0e0e0;
+        }
+
+        #chart-container {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            transition: opacity 1.2s ease;
+        }
+        #chart-container.fade-out { opacity: 0; pointer-events: none; }
+
+        .chart-title {
+            font-size: clamp(14px, 3vw, 18px);
+            color: #888; letter-spacing: 3px;
+            margin-bottom: 8px;
+            opacity: 0; animation: fadeSlideIn 1s ease 0.3s forwards;
+        }
+        .chart-subtitle {
+            font-size: clamp(10px, 2vw, 12px);
+            color: #555; letter-spacing: 2px;
+            margin-bottom: 20px;
+            opacity: 0; animation: fadeSlideIn 1s ease 0.6s forwards;
+        }
+
+        canvas { display: block; }
+
+        #metrics {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(15, 15, 25, 0.85);
+            border: 1px solid rgba(99, 180, 255, 0.15);
+            border-radius: 12px; padding: 16px 20px;
+            min-width: 180px;
+            backdrop-filter: blur(10px);
+            opacity: 0; animation: fadeSlideIn 0.8s ease 1s forwards;
+        }
+        #metrics h4 {
+            font-size: 10px; color: #63b4ff;
+            letter-spacing: 2px; margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .metric-row {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 6px;
+            font-size: 12px;
+        }
+        .metric-label { color: #666; }
+        .metric-value { color: #4fc3f7; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .metric-value.gold { color: #ffd54f; }
+        .metric-value.rose { color: #f48fb1; }
+
+        #epoch-display {
+            position: absolute; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px; color: #444; letter-spacing: 2px;
+            opacity: 0; animation: fadeSlideIn 0.8s ease 1.2s forwards;
+        }
+
+        #convergence-overlay {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 1.5s ease;
+            z-index: 10;
+        }
+        #convergence-overlay.visible { opacity: 1; pointer-events: auto; }
+
+        .convergence-heart {
+            font-size: clamp(60px, 15vw, 120px);
+            color: #f48fb1;
+            animation: heartbeat 1.2s ease-in-out infinite;
+            text-shadow: 0 0 40px rgba(244, 143, 177, 0.5),
+                         0 0 80px rgba(244, 143, 177, 0.3);
+            margin-bottom: 30px;
+        }
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            15% { transform: scale(1.15); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.1); }
+        }
+
+        .convergence-text {
+            font-size: clamp(16px, 4vw, 28px);
+            color: #fff;
+            letter-spacing: 4px;
+            text-align: center;
+            line-height: 1.8;
+            opacity: 0;
+            animation: textReveal 2s ease 0.5s forwards;
+        }
+        .convergence-text .highlight {
+            color: #f48fb1;
+            text-shadow: 0 0 20px rgba(244, 143, 177, 0.4);
+        }
+
+        .convergence-sub {
+            font-size: clamp(11px, 2.5vw, 14px);
+            color: #666; letter-spacing: 3px;
+            margin-top: 20px;
+            opacity: 0;
+            animation: textReveal 2s ease 1.5s forwards;
+        }
+
+        .convergence-formula {
+            margin-top: 30px;
+            font-size: clamp(12px, 2.5vw, 16px);
+            color: #4fc3f7;
+            letter-spacing: 2px;
+            opacity: 0;
+            animation: textReveal 2s ease 2.5s forwards;
+        }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes textReveal {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #particles-canvas {
+            position: absolute; inset: 0;
+            z-index: 5; pointer-events: none;
+        }
+
+        #progress-bar {
+            position: absolute; bottom: 0; left: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4fc3f7, #f48fb1);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        #start-btn {
+            position: absolute;
+            z-index: 20;
+            padding: 14px 40px;
+            background: transparent;
+            border: 1px solid rgba(79, 195, 247, 0.4);
+            border-radius: 30px;
+            color: #4fc3f7;
+            font-size: 14px;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        #start-btn:hover {
+            background: rgba(79, 195, 247, 0.1);
+            border-color: #4fc3f7;
+            box-shadow: 0 0 30px rgba(79, 195, 247, 0.2);
+        }
+
+        #training-log {
+            position: absolute; top: 20px; left: 20px;
+            font-size: 10px; color: #333;
+            line-height: 1.8; max-width: 220px;
+            opacity: 0; animation: fadeSlideIn 0.8s ease 1.5s forwards;
+        }
+        #training-log .log-line { white-space: nowrap; overflow: hidden; }
+        #training-log .log-line.active { color: #4fc3f7; }
+        #training-log .log-line.done { color: #4caf50; }
+
+        @media (max-width: 600px) {
+            #metrics {
+                top: auto; bottom: 50px; right: 10px;
+                min-width: 150px; padding: 12px 14px;
+            }
+            #training-log { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="chart-container">
+        <div class="chart-title">Training Loss Curve</div>
+        <div class="chart-subtitle">Optimizing: Distance Between Hearts</div>
+        <canvas id="chart"></canvas>
+        <canvas id="particles-canvas"></canvas>
+
+        <div id="metrics">
+            <h4>Training Metrics</h4>
+            <div class="metric-row">
+                <span class="metric-label">Loss</span>
+                <span class="metric-value" id="metric-loss">1.0000</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Epoch</span>
+                <span class="metric-value gold" id="metric-epoch">0</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">LR</span>
+                <span class="metric-value" id="metric-lr">0.001</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Accuracy</span>
+                <span class="metric-value rose" id="metric-acc">0.00%</span>
+            </div>
+        </div>
+
+        <div id="training-log">
+            <div class="log-line" id="log-init">&gt; Initializing model...</div>
+            <div class="log-line" id="log-data">&gt; Loading dataset: memories_of_you.pt</div>
+            <div class="log-line" id="log-train">&gt; Starting training...</div>
+            <div class="log-line" id="log-converge">&gt; Converging...</div>
+            <div class="log-line" id="log-done">&gt; Model perfectly fitted!</div>
+        </div>
+
+        <div id="epoch-display">
+            <span id="epoch-text">Epoch 0 / 500</span>
+        </div>
+        <div id="progress-bar"></div>
+    </div>
+
+    <div id="convergence-overlay">
+        <div class="convergence-heart">&#10084;</div>
+        <div class="convergence-text">
+            当 Loss 降至最低<br>
+            我的世界<span class="highlight">完美拟合</span>了你
+        </div>
+        <div class="convergence-sub">MODEL CONVERGED — OPTIMAL SOLUTION FOUND</div>
+        <div class="convergence-formula">f(you) = my_heart &nbsp;|&nbsp; L(&theta;) &rarr; 0 &nbsp;|&nbsp; acc &rarr; 100%</div>
+    </div>
+
+    <button id="start-btn">&#9654; 开始训练</button>
+
+    <script>
+        const TOTAL_EPOCHS = 500;
+        const ANIMATION_DURATION = 8000;
+        const PAD = { top: 30, right: 40, bottom: 50, left: 60 };
+
+        function generateLossData(n) {
+            const data = [];
+            for (let i = 0; i < n; i++) {
+                const t = i / (n - 1);
+                let loss = Math.exp(-4 * t) + 0.02 * Math.sin(i * 0.3) * Math.exp(-2 * t);
+                if (i < 20) loss += 0.15 * (1 - i / 20);
+                loss = Math.max(0, loss);
+                data.push(loss);
+            }
+            for (let i = n - 5; i < n; i++) data[i] *= 0.1;
+            return data;
+        }
+
+        const lossData = generateLossData(TOTAL_EPOCHS);
+
+        const chartCanvas = document.getElementById('chart');
+        const chartCtx = chartCanvas.getContext('2d');
+        const pCanvas = document.getElementById('particles-canvas');
+        const pCtx = pCanvas.getContext('2d');
+
+        let W, H, cW, cH;
+
+        function resize() {
+            const dpr = window.devicePixelRatio || 1;
+            W = window.innerWidth;
+            H = window.innerHeight;
+            for (const [cvs, ctx] of [[chartCanvas, chartCtx], [pCanvas, pCtx]]) {
+                cvs.width = W * dpr; cvs.height = H * dpr;
+                cvs.style.width = W + 'px'; cvs.style.height = H + 'px';
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+            cW = W - PAD.left - PAD.right;
+            cH = H - PAD.top - PAD.bottom;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        function drawGrid() {
+            const ctx = chartCtx;
+            ctx.clearRect(0, 0, W, H);
+            const bg = ctx.createLinearGradient(0, 0, 0, H);
+            bg.addColorStop(0, '#0a0a0f');
+            bg.addColorStop(1, '#0f0f1a');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, W, H);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 6; i++) {
+                const y = PAD.top + (cH / 6) * i;
+                ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + cW, y); ctx.stroke();
+            }
+            for (let i = 0; i <= 10; i++) {
+                const x = PAD.left + (cW / 10) * i;
+                ctx.beginPath(); ctx.moveTo(x, PAD.top); ctx.lineTo(x, PAD.top + cH); ctx.stroke();
+            }
+
+            ctx.fillStyle = '#444';
+            ctx.font = '10px SF Mono, Consolas, monospace';
+            ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+            for (let i = 0; i <= 6; i++) {
+                ctx.fillText((1 - i / 6).toFixed(1), PAD.left - 10, PAD.top + (cH / 6) * i);
+            }
+            ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            for (let i = 0; i <= 10; i++) {
+                ctx.fillText(Math.round((i / 10) * TOTAL_EPOCHS), PAD.left + (cW / 10) * i, PAD.top + cH + 10);
+            }
+
+            ctx.fillStyle = '#555';
+            ctx.font = '11px "PingFang SC", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('相遇的时间 (Epoch)', PAD.left + cW / 2, PAD.top + cH + 35);
+            ctx.save();
+            ctx.translate(15, PAD.top + cH / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('心与心的距离 (Loss)', 0, 0);
+            ctx.restore();
+        }
+
+        function drawCurve(upTo) {
+            const ctx = chartCtx;
+            if (upTo < 2) return;
+            const pts = [];
+            for (let i = 0; i <= upTo && i < lossData.length; i++) {
+                pts.push({
+                    x: PAD.left + (i / (TOTAL_EPOCHS - 1)) * cW,
+                    y: PAD.top + lossData[i] * cH
+                });
+            }
+            if (pts.length < 2) return;
+
+            // Fill under curve
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) {
+                const mx = (pts[i-1].x + pts[i].x) / 2;
+                const my = (pts[i-1].y + pts[i].y) / 2;
+                ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, mx, my);
+            }
+            ctx.lineTo(pts[pts.length-1].x, PAD.top + cH);
+            ctx.lineTo(pts[0].x, PAD.top + cH);
+            ctx.closePath();
+            const fg = ctx.createLinearGradient(0, PAD.top, 0, PAD.top + cH);
+            fg.addColorStop(0, 'rgba(79,195,247,0.15)');
+            fg.addColorStop(1, 'rgba(79,195,247,0)');
+            ctx.fillStyle = fg;
+            ctx.fill();
+
+            // Line
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) {
+                const mx = (pts[i-1].x + pts[i].x) / 2;
+                const my = (pts[i-1].y + pts[i].y) / 2;
+                ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, mx, my);
+            }
+            const lg = ctx.createLinearGradient(PAD.left, 0, PAD.left + cW, 0);
+            lg.addColorStop(0, '#4fc3f7');
+            lg.addColorStop(0.5, '#81c784');
+            lg.addColorStop(0.8, '#f48fb1');
+            lg.addColorStop(1, '#f48fb1');
+            ctx.strokeStyle = lg;
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Glow
+            ctx.strokeStyle = 'rgba(79,195,247,0.12)';
+            ctx.lineWidth = 8;
+            ctx.stroke();
+
+            // Endpoint
+            const last = pts[pts.length - 1];
+            const pg = ctx.createRadialGradient(last.x, last.y, 0, last.x, last.y, 15);
+            pg.addColorStop(0, 'rgba(244,143,177,0.6)');
+            pg.addColorStop(1, 'rgba(244,143,177,0)');
+            ctx.fillStyle = pg;
+            ctx.beginPath(); ctx.arc(last.x, last.y, 15, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#f48fb1';
+            ctx.beginPath(); ctx.arc(last.x, last.y, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(last.x, last.y, 2, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Particles
+        let particles = [];
+        let pActive = false;
+
+        function drawHeart(ctx, x, y, s) {
+            const r = s * 0.5;
+            ctx.beginPath();
+            ctx.moveTo(x, y + r * 0.3);
+            ctx.bezierCurveTo(x, y - r * 0.3, x - r, y - r * 0.3, x - r, y + r * 0.1);
+            ctx.bezierCurveTo(x - r, y + r * 0.6, x, y + r * 0.8, x, y + r);
+            ctx.bezierCurveTo(x, y + r * 0.8, x + r, y + r * 0.6, x + r, y + r * 0.1);
+            ctx.bezierCurveTo(x + r, y - r * 0.3, x, y - r * 0.3, x, y + r * 0.3);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function spawnParticles() {
+            for (let i = 0; i < 80; i++) {
+                particles.push({
+                    x: W / 2 + (Math.random() - 0.5) * 100,
+                    y: H / 2 + (Math.random() - 0.5) * 100,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8 - 2,
+                    size: Math.random() * 4 + 2,
+                    color: ['#f48fb1','#4fc3f7','#ffd54f','#81c784','#ce93d8'][Math.random()*5|0],
+                    life: 1,
+                    decay: 0.005 + Math.random() * 0.01,
+                    shape: Math.random() > 0.5 ? 'circle' : 'heart'
+                });
+            }
+        }
+
+        function tickParticles() {
+            if (!pActive) return;
+            pCtx.clearRect(0, 0, W, H);
+            particles = particles.filter(p => p.life > 0);
+            for (const p of particles) {
+                p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.life -= p.decay;
+                pCtx.globalAlpha = p.life;
+                pCtx.fillStyle = p.color;
+                p.shape === 'heart' ? drawHeart(pCtx, p.x, p.y, p.size)
+                    : (pCtx.beginPath(), pCtx.arc(p.x, p.y, p.size, 0, Math.PI*2), pCtx.fill());
+            }
+            pCtx.globalAlpha = 1;
+            if (particles.length) requestAnimationFrame(tickParticles);
+        }
+
+        // Main animation
+        let started = false, t0 = 0;
+
+        function frame(ts) {
+            if (!started) return;
+            const elapsed = ts - t0;
+            const progress = Math.min(elapsed / ANIMATION_DURATION, 1);
+            const eased = progress < 0.5
+                ? 2 * progress * progress
+                : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+            const idx = Math.floor(eased * (TOTAL_EPOCHS - 1));
+
+            drawGrid();
+            drawCurve(idx);
+
+            const loss = lossData[idx];
+            const acc = Math.min(100, (1 - loss) * 100 + Math.random() * 2);
+            document.getElementById('metric-loss').textContent = loss.toFixed(4);
+            document.getElementById('metric-epoch').textContent = idx + 1;
+            document.getElementById('metric-acc').textContent = acc.toFixed(2) + '%';
+            document.getElementById('epoch-text').textContent = `Epoch ${idx + 1} / ${TOTAL_EPOCHS}`;
+            document.getElementById('progress-bar').style.width = (progress * 100) + '%';
+
+            if (idx > 10) document.getElementById('log-init').className = 'log-line done';
+            if (idx > 50) {
+                document.getElementById('log-data').className = 'log-line done';
+                document.getElementById('log-train').className = 'log-line active';
+            }
+            if (idx > 300) {
+                document.getElementById('log-train').className = 'log-line done';
+                document.getElementById('log-converge').className = 'log-line active';
+            }
+
+            if (loss < 0.01 && progress > 0.85) {
+                converge();
+                return;
+            }
+            requestAnimationFrame(frame);
+        }
+
+        function converge() {
+            document.getElementById('log-converge').className = 'log-line done';
+            document.getElementById('log-done').className = 'log-line active';
+            document.getElementById('chart-container').classList.add('fade-out');
+            setTimeout(() => {
+                document.getElementById('convergence-overlay').classList.add('visible');
+                pActive = true;
+                spawnParticles(); tickParticles();
+                setTimeout(() => { spawnParticles(); tickParticles(); }, 1500);
+            }, 800);
+        }
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            const btn = document.getElementById('start-btn');
+            btn.style.opacity = '0';
+            btn.style.pointerEvents = 'none';
+            started = true;
+            t0 = performance.now();
+            requestAnimationFrame(frame);
+        });
+
+        drawGrid();
+    </script>
+</body>
+</html>

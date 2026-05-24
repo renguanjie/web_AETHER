@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>心动天气预报</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%; overflow-y: auto;
+            font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+        }
+        .weather-app {
+            max-width: 400px; margin: 0 auto; min-height: 100vh;
+            background: linear-gradient(180deg, #4a90d9, #87CEEB, #f0f8ff);
+            padding: 20px;
+        }
+        .location { text-align: center; padding: 20px 0 10px; }
+        .location-name { font-size: 18px; font-weight: 300; color: #fff; letter-spacing: 2px; }
+        .location-date { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+
+        .current-weather { text-align: center; padding: 30px 0; }
+        .weather-icon { font-size: 64px; }
+        .weather-temp { font-size: clamp(48px, 12vw, 72px); font-weight: 200; color: #fff; letter-spacing: -2px; }
+        .weather-desc { font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 4px; }
+        .weather-range { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+        .forecast-cards { display: flex; gap: 8px; overflow-x: auto; padding: 16px 0; }
+        .forecast-card { min-width: 70px; background: rgba(255,255,255,0.15); border-radius: 12px; padding: 12px 8px; text-align: center; }
+        .forecast-day { font-size: 11px; color: rgba(255,255,255,0.7); margin-bottom: 8px; }
+        .forecast-icon { font-size: 24px; margin-bottom: 8px; }
+        .forecast-temp { font-size: 12px; color: #fff; font-weight: 500; }
+
+        .forecast-section { padding: 16px 0; }
+        .forecast-section h3 { font-size: 12px; color: rgba(255,255,255,0.6); letter-spacing: 2px; margin-bottom: 12px; }
+        .forecast-table { background: rgba(255,255,255,0.1); border-radius: 16px; padding: 16px; }
+        .forecast-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .forecast-row:last-child { border-bottom: none; }
+        .forecast-row .day { font-size: 13px; color: #fff; width: 60px; }
+        .forecast-row .icon { font-size: 20px; }
+        .forecast-row .desc { flex: 1; font-size: 12px; color: rgba(255,255,255,0.7); margin-left: 10px; }
+        .forecast-row .temp { font-size: 13px; color: #fff; font-weight: 500; }
+
+        .special-alert { margin-top: 16px; padding: 16px; background: linear-gradient(135deg, rgba(255,107,157,0.2), rgba(192,132,252,0.2)); border: 1px solid rgba(255,107,157,0.3); border-radius: 16px; text-align: center; }
+        .alert-icon { font-size: 24px; margin-bottom: 8px; }
+        .alert-title { font-size: 14px; color: #ff6b9d; font-weight: 600; margin-bottom: 4px; }
+        .alert-text { font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="weather-app">
+        <div class="location">
+            <div class="location-name">&#128205; 你的心里</div>
+            <div class="location-date" id="weather-date"></div>
+        </div>
+        <div class="current-weather">
+            <div class="weather-icon">&#127775;</div>
+            <div class="weather-temp">52.0&deg;</div>
+            <div class="weather-desc">心动转晴</div>
+            <div class="weather-range">体感温度：甜度超标</div>
+        </div>
+        <div class="forecast-cards">
+            <div class="forecast-card"><div class="forecast-day">今天</div><div class="forecast-icon">&#128149;</div><div class="forecast-temp">想你</div></div>
+            <div class="forecast-card"><div class="forecast-day">明天</div><div class="forecast-icon">&#127775;</div><div class="forecast-temp">更想你</div></div>
+            <div class="forecast-card"><div class="forecast-day">后天</div><div class="forecast-icon">&#127775;</div><div class="forecast-temp">持续想你</div></div>
+            <div class="forecast-card"><div class="forecast-day">周五</div><div class="forecast-icon">&#10084;</div><div class="forecast-temp">见你</div></div>
+            <div class="forecast-card"><div class="forecast-day">周末</div><div class="forecast-icon">&#128147;</div><div class="forecast-temp">陪你</div></div>
+        </div>
+        <div class="forecast-section">
+            <h3>七日预报</h3>
+            <div class="forecast-table">
+                <div class="forecast-row"><span class="day">周一</span><span class="icon">&#128149;</span><span class="desc">持续心动</span><span class="temp">52&deg;</span></div>
+                <div class="forecast-row"><span class="day">周二</span><span class="icon">&#127775;</span><span class="desc">想念加剧</span><span class="temp">55&deg;</span></div>
+                <div class="forecast-row"><span class="day">周三</span><span class="icon">&#127752;</span><span class="desc">回忆小雨</span><span class="temp">48&deg;</span></div>
+                <div class="forecast-row"><span class="day">周四</span><span class="icon">&#127749;</span><span class="desc">期待转晴</span><span class="temp">50&deg;</span></div>
+                <div class="forecast-row"><span class="day">周五</span><span class="icon">&#10084;</span><span class="desc">见面升温</span><span class="temp">99&deg;</span></div>
+                <div class="forecast-row"><span class="day">周六</span><span class="icon">&#128147;</span><span class="desc">甜蜜暴击</span><span class="temp">100&deg;</span></div>
+                <div class="forecast-row"><span class="day">周日</span><span class="icon">&#127775;</span><span class="desc">持续热恋</span><span class="temp">&#8734;&deg;</span></div>
+            </div>
+        </div>
+        <div class="special-alert">
+            <div class="alert-icon">&#9888;&#65039;</div>
+            <div class="alert-title">气象预警</div>
+            <div class="alert-text">预计未来 365 天将持续心动<br>局部地区可能产生拥抱冲动<br>建议：尽快见面，以缓解症状</div>
+        </div>
+    </div>
+    <script>
+        var now = new Date();
+        var days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        document.getElementById('weather-date').textContent = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 ' + days[now.getDay()];
+    </script>
+</body>
+</html>
