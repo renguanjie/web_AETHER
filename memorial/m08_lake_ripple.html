@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>湖心 · 涟漪</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: linear-gradient(180deg, #3a4a5a, #2a3a4a); font-family: 'STSong', 'SimSun', serif; cursor: pointer; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        .hint { position: fixed; top: 30px; left: 0; right: 0; text-align: center; font-size: 12px; color: rgba(200,200,210,0.3); letter-spacing: 4px; transition: opacity 3s ease; }
+        .date-float { position: fixed; pointer-events: none; font-size: 13px; color: rgba(200,210,220,0.6); letter-spacing: 3px; animation: dateRise 4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+        @keyframes dateRise { 0%{opacity:0;transform:translateY(0);} 20%{opacity:1;} 100%{opacity:0;transform:translateY(-60px);} }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="hint" id="hint">点击水面，投下一颗石子</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+        var ripples = [];
+        canvas.addEventListener('click', function(e) {
+            ripples.push({ x: e.clientX, y: e.clientY, r: 0, op: 0.5, born: Date.now() });
+            var df = document.createElement('div'); df.className = 'date-float';
+            df.textContent = ['春','夏','秋','冬'][Math.floor(Math.random()*4)] + ' · ' + (2020+Math.floor(Math.random()*6));
+            df.style.left = (e.clientX-30) + 'px'; df.style.top = (e.clientY-20) + 'px'; document.body.appendChild(df);
+            setTimeout(function() { document.body.removeChild(df); }, 4000);
+            document.getElementById('hint').style.opacity = '0';
+        });
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight; ctx.clearRect(0, 0, w, h);
+            var wg = ctx.createLinearGradient(0,0,0,h); wg.addColorStop(0,'#2a3a4a'); wg.addColorStop(1,'#1a2a3a'); ctx.fillStyle = wg; ctx.fillRect(0,0,w,h);
+            for (var i = 0; i < 20; i++) { var y = i*h/20; ctx.strokeStyle = 'rgba(150,170,190,0.03)'; ctx.lineWidth = 0.5; ctx.beginPath(); for (var x = 0; x < w; x += 3) { var yy = y+Math.sin(x*0.01+t*0.0005+i)*2; if(x===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy); } ctx.stroke(); }
+            for (var j = 0; j < ripples.length; j++) { var rp = ripples[j], age = (Date.now()-rp.born)/1000; rp.r = age*40; rp.op = Math.max(0, 0.5-age*0.08); ctx.beginPath(); ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI*2); ctx.strokeStyle = 'rgba(180,200,220,'+rp.op+')'; ctx.lineWidth = 1; ctx.stroke(); if(rp.r>10){ctx.beginPath();ctx.arc(rp.x,rp.y,rp.r*0.6,0,Math.PI*2);ctx.strokeStyle='rgba(180,200,220,'+(rp.op*0.5)+')';ctx.stroke();} }
+            requestAnimationFrame(draw);
+        }
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

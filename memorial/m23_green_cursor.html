@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>光标 · 未发送</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'STSong', 'SimSun', serif; }
+        .chat { width: 85%; max-width: 360px; }
+        .messages { max-height: 50vh; overflow-y: auto; padding: 10px 0; }
+        .msg { margin-bottom: 12px; animation: fadeIn 3s ease; }
+        .msg.sent { text-align: right; }
+        .msg .bubble { display: inline-block; padding: 8px 14px; border-radius: 16px; font-size: 13px; line-height: 1.6; letter-spacing: 1px; }
+        .msg.sent .bubble { background: rgba(40,80,40,0.2); color: rgba(200,195,185,0.35); }
+        .msg.received .bubble { background: rgba(40,40,40,0.3); color: rgba(200,195,185,0.25); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .input-area { position: relative; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; margin-top: 15px; }
+        .input-area input { width: 100%; background: transparent; border: none; outline: none; color: rgba(200,195,185,0.3); font-size: 13px; font-family: 'STSong', 'SimSun', serif; letter-spacing: 1px; padding-right: 40px; }
+        .input-area .cursor { display: inline-block; width: 2px; height: 16px; background: rgba(100,200,100,0.5); position: absolute; right: 5px; top: 50%; transform: translateY(-50%); animation: blink 1.2s step-end infinite; }
+        @keyframes blink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
+        .input-area .send { position: absolute; right: 25px; top: 50%; transform: translateY(-50%); color: rgba(100,200,100,0.15); font-size: 16px; pointer-events: none; }
+        .status { text-align: center; font-size: 10px; color: rgba(200,195,185,0.1); margin-top: 20px; letter-spacing: 2px; opacity: 0; transition: opacity 4s ease; }
+        .status.visible { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="chat">
+        <div class="messages" id="messages"></div>
+        <div class="input-area">
+            <input type="text" id="input" placeholder="输入你想说的话..." readonly>
+            <span class="send">↑</span>
+            <span class="cursor"></span>
+        </div>
+        <div class="status" id="status">对方已离线 327 天</div>
+    </div>
+    <script>
+        var messages = [
+            { text: '在吗？', type: 'sent' },
+            { text: '今天下雨了', type: 'sent' },
+            { text: '你种的那盆花开了', type: 'sent' },
+            { text: '我拍了照片给你看', type: 'sent' },
+            { text: '...', type: 'received' },
+            { text: '你那边也下雨了吗？', type: 'sent' },
+            { text: '花很美，像你喜欢的样子', type: 'sent' },
+            { text: '...', type: 'received' },
+            { text: '我想你了', type: 'sent' },
+        ];
+        var idx = 0;
+        function addMessage() {
+            if (idx >= messages.length) {
+                document.getElementById('status').classList.add('visible');
+                document.getElementById('input').focus();
+                return;
+            }
+            var msg = messages[idx];
+            var div = document.createElement('div');
+            div.className = 'msg ' + msg.type;
+            div.innerHTML = '<div class="bubble">' + msg.text + '</div>';
+            document.getElementById('messages').appendChild(div);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+            idx++;
+            setTimeout(addMessage, 2000 + Math.random() * 1500);
+        }
+        setTimeout(addMessage, 1000);
+    </script>
+</body>
+</html>

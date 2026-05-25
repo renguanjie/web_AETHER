@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>磁盘 · 碎片</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'Courier New', 'STSong', monospace; }
+        canvas { display: block; width: 100vw; height: 100vh; cursor: pointer; }
+        .text { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 13px; color: rgba(200,195,185,0.15); letter-spacing: 4px; opacity: 0; transition: opacity 4s ease; font-family: 'STSong', 'SimSun', serif; }
+        .text.visible { opacity: 1; }
+        .hint { position: fixed; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(200,195,185,0.1); letter-spacing: 3px; font-family: 'STSong', 'SimSun', serif; }
+        .progress { position: fixed; top: 10vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(100,200,100,0.2); letter-spacing: 2px; opacity: 0; transition: opacity 2s ease; }
+        .progress.visible { opacity: 1; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="progress" id="progress"></div>
+    <div class="text" id="text">碎片整理完成，记忆已重新排列</div>
+    <div class="hint">点击开始磁盘碎片整理</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+
+        var blocks = [];
+        var COLS = 20, ROWS = 12;
+        var blockW, blockH, offsetX, offsetY;
+        var defragging = false;
+        var defragProgress = 0;
+        var memoryLabels = ['笑', '泪', '雨', '夜', '花', '光', '风', '梦', '星', '月', '海', '山'];
+
+        function initBlocks() {
+            var w = window.innerWidth, h = window.innerHeight;
+            blockW = Math.min(30, (w * 0.7) / COLS);
+            blockH = blockW * 0.7;
+            offsetX = (w - COLS * blockW) / 2;
+            offsetY = h * 0.3;
+            blocks = [];
+            for (var i = 0; i < COLS * ROWS; i++) {
+                var col = i % COLS, row = Math.floor(i / COLS);
+                var isMemory = Math.random() > 0.6;
+                blocks.push({
+                    col: col, row: row,
+                    targetCol: col, targetRow: row,
+                    x: offsetX + col * blockW,
+                    y: offsetY + row * blockH,
+                    targetX: offsetX + col * blockW,
+                    targetY: offsetY + row * blockH,
+                    isMemory: isMemory,
+                    label: isMemory ? memoryLabels[Math.floor(Math.random() * memoryLabels.length)] : '',
+                    color: isMemory ? 'rgba(100,180,100,' + (0.15 + Math.random() * 0.15) + ')' : 'rgba(60,60,60,' + (0.1 + Math.random() * 0.1) + ')'
+                });
+            }
+        }
+
+        document.addEventListener('click', function() {
+            if (defragging) return;
+            defragging = true;
+            document.getElementById('progress').classList.add('visible');
+            document.querySelector('.hint').style.opacity = '0';
+            var memoryBlocks = blocks.filter(function(b) { return b.isMemory; });
+            var emptySlots = blocks.map(function(b, i) { return i; }).sort(function() { return Math.random() - 0.5; });
+            for (var i = 0; i < memoryBlocks.length; i++) {
+                var targetIdx = emptySlots[i];
+                memoryBlocks[i].targetCol = targetIdx % COLS;
+                memoryBlocks[i].targetRow = Math.floor(targetIdx / COLS);
+                memoryBlocks[i].targetX = offsetX + memoryBlocks[i].targetCol * blockW;
+                memoryBlocks[i].targetY = offsetY + memoryBlocks[i].targetRow * blockH;
+            }
+        });
+
+        document.addEventListener('touchstart', function() {
+            if (defragging) return;
+            defragging = true;
+            document.getElementById('progress').classList.add('visible');
+            document.querySelector('.hint').style.opacity = '0';
+            var memoryBlocks = blocks.filter(function(b) { return b.isMemory; });
+            var emptySlots = blocks.map(function(b, i) { return i; }).sort(function() { return Math.random() - 0.5; });
+            for (var i = 0; i < memoryBlocks.length; i++) {
+                var targetIdx = emptySlots[i];
+                memoryBlocks[i].targetCol = targetIdx % COLS;
+                memoryBlocks[i].targetRow = Math.floor(targetIdx / COLS);
+                memoryBlocks[i].targetX = offsetX + memoryBlocks[i].targetCol * blockW;
+                memoryBlocks[i].targetY = offsetY + memoryBlocks[i].targetRow * blockH;
+            }
+        }, { passive: true });
+
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+            var bg = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.6);
+            bg.addColorStop(0, '#121210');
+            bg.addColorStop(1, '#0a0a0a');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, w, h);
+
+            if (defragging) {
+                defragProgress = Math.min(1, defragProgress + 0.003);
+                var pct = Math.floor(defragProgress * 100);
+                document.getElementById('progress').textContent = 'Defragmenting... ' + pct + '%';
+                if (defragProgress >= 1) {
+                    document.getElementById('progress').textContent = 'Defragmentation complete.';
+                    document.getElementById('text').classList.add('visible');
+                }
+            }
+
+            var eased = defragProgress;
+            eased = eased < 0.5 ? 2 * eased * eased : 1 - Math.pow(-2 * eased + 2, 2) / 2;
+
+            for (var i = 0; i < blocks.length; i++) {
+                var b = blocks[i];
+                var bx = b.x + (b.targetX - b.x) * eased * (defragging ? 1 : 0);
+                var by = b.y + (b.targetY - b.y) * eased * (defragging ? 1 : 0);
+                ctx.fillStyle = b.color;
+                ctx.fillRect(bx + 1, by + 1, blockW - 2, blockH - 2);
+                if (b.label && b.isMemory) {
+                    ctx.fillStyle = 'rgba(200,195,185,0.2)';
+                    ctx.font = (blockH * 0.5) + 'px STSong, SimSun, serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(b.label, bx + blockW / 2, by + blockH / 2);
+                }
+            }
+
+            ctx.strokeStyle = 'rgba(100,200,100,0.05)';
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(offsetX, offsetY, COLS * blockW, ROWS * blockH);
+
+            requestAnimationFrame(draw);
+        }
+        initBlocks();
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

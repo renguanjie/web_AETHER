@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>阶梯 · 天国</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a12; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'STSong', 'SimSun', serif; }
+        canvas { display: block; width: 100vw; height: 100vh; cursor: pointer; }
+        .text { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 13px; color: rgba(200,195,185,0.15); letter-spacing: 4px; opacity: 0; transition: opacity 4s ease; }
+        .text.visible { opacity: 1; }
+        .hint { position: fixed; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(200,195,185,0.1); letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="text" id="text">你走得很远，但从未离开</div>
+    <div class="hint">点击阶梯，送它往上走</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+
+        var steps = [];
+        var totalSteps = 30;
+        var clouds = [];
+        var clicked = false;
+
+        function initSteps() {
+            var w = window.innerWidth, h = window.innerHeight;
+            steps = [];
+            var stepW = Math.min(120, w * 0.4);
+            var stepH = 12;
+            var cx = w / 2;
+            for (var i = 0; i < totalSteps; i++) {
+                var sway = Math.sin(i * 0.3) * 30;
+                steps.push({
+                    x: cx + sway - stepW / 2,
+                    w: stepW - i * 1.5,
+                    h: stepH,
+                    opacity: Math.max(0.05, 0.5 - i * 0.015),
+                    targetY: h - i * 35 + 200,
+                    currentY: h - i * 35 + 200
+                });
+            }
+            clouds = [];
+            for (var j = 0; j < 15; j++) {
+                clouds.push({
+                    x: Math.random() * w,
+                    y: Math.random() * h * 0.4,
+                    w: 60 + Math.random() * 100,
+                    h: 20 + Math.random() * 30,
+                    speed: 0.05 + Math.random() * 0.1,
+                    opacity: 0.03 + Math.random() * 0.05
+                });
+            }
+        }
+
+        canvas.addEventListener('click', function() {
+            if (!clicked) {
+                clicked = true;
+                document.querySelector('.hint').style.opacity = '0';
+            }
+            for (var i = 0; i < steps.length; i++) {
+                steps[i].targetY -= 8;
+            }
+            var h = window.innerHeight;
+            var totalShift = h - steps[0].targetY - 200;
+            if (totalShift > 200) {
+                document.getElementById('text').classList.add('visible');
+            }
+        });
+
+        canvas.addEventListener('touchstart', function() {
+            if (!clicked) {
+                clicked = true;
+                document.querySelector('.hint').style.opacity = '0';
+            }
+            for (var i = 0; i < steps.length; i++) {
+                steps[i].targetY -= 8;
+            }
+            var h = window.innerHeight;
+            var totalShift = h - steps[0].targetY - 200;
+            if (totalShift > 200) {
+                document.getElementById('text').classList.add('visible');
+            }
+        }, { passive: true });
+
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            var skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+            skyGrad.addColorStop(0, '#1a1a2a');
+            skyGrad.addColorStop(0.5, '#0f0f18');
+            skyGrad.addColorStop(1, '#0a0a10');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            for (var i = 0; i < 80; i++) {
+                var sx = (i * 97.3) % w;
+                var sy = (i * 63.7) % h;
+                var twinkle = 0.05 + Math.sin(t * 0.002 + i * 1.3) * 0.05;
+                ctx.beginPath();
+                ctx.arc(sx, sy, 0.5 + Math.random() * 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(200,210,220,' + twinkle + ')';
+                ctx.fill();
+            }
+
+            for (var j = 0; j < clouds.length; j++) {
+                var c = clouds[j];
+                c.x += c.speed;
+                if (c.x > w + c.w) c.x = -c.w;
+                ctx.beginPath();
+                ctx.ellipse(c.x, c.y, c.w / 2, c.h / 2, 0, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(180,190,200,' + c.opacity + ')';
+                ctx.fill();
+            }
+
+            for (var k = 0; k < steps.length; k++) {
+                var s = steps[k];
+                s.currentY += (s.targetY - s.currentY) * 0.03;
+                if (s.currentY > -20 && s.currentY < h + 20) {
+                    ctx.fillStyle = 'rgba(0,0,0,' + (s.opacity * 0.3) + ')';
+                    ctx.fillRect(s.x + 2, s.currentY + 2, s.w, s.h);
+                    var stepGrad = ctx.createLinearGradient(s.x, s.currentY, s.x, s.currentY + s.h);
+                    stepGrad.addColorStop(0, 'rgba(100,110,120,' + s.opacity + ')');
+                    stepGrad.addColorStop(1, 'rgba(70,80,90,' + (s.opacity * 0.7) + ')');
+                    ctx.fillStyle = stepGrad;
+                    ctx.fillRect(s.x, s.currentY, s.w, s.h);
+                    ctx.fillStyle = 'rgba(150,160,170,' + (s.opacity * 0.3) + ')';
+                    ctx.fillRect(s.x, s.currentY, s.w, 1);
+                }
+            }
+
+            var lightGrad = ctx.createRadialGradient(w / 2, 0, 0, w / 2, 0, h * 0.3);
+            lightGrad.addColorStop(0, 'rgba(200,200,210,0.05)');
+            lightGrad.addColorStop(1, 'rgba(200,200,210,0)');
+            ctx.fillStyle = lightGrad;
+            ctx.fillRect(0, 0, w, h * 0.5);
+
+            requestAnimationFrame(draw);
+        }
+        initSteps();
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

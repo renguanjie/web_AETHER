@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>灰烬 · 重组</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'STSong', 'SimSun', serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        .text { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 13px; color: rgba(200,195,185,0.15); letter-spacing: 4px; opacity: 0; transition: opacity 4s ease; }
+        .text.visible { opacity: 1; }
+        .hint { position: fixed; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(200,195,185,0.1); letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="text" id="text">碎灰聚成你的轮廓，却再也触不到</div>
+    <div class="hint">点击屏幕，看灰烬慢慢聚合</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+
+        var particles = [];
+        var phase = 0;
+        var assemblyProgress = 0;
+        var targetPositions = [];
+        var faceW = 120, faceH = 150;
+        var NUM = 600;
+        var centerX, centerY;
+        var assembledTime = 0;
+
+        function computeTargets() {
+            var w = window.innerWidth, h = window.innerHeight;
+            centerX = w / 2, centerY = h * 0.4;
+            targetPositions = [];
+            var imgData = generateFacePattern(faceW, faceH);
+            for (var y = 0; y < faceH; y += 3) {
+                for (var x = 0; x < faceW; x += 3) {
+                    var idx = (y * faceW + x) * 4;
+                    if (imgData[idx + 3] > 100) {
+                        targetPositions.push({ x: centerX - faceW / 2 + x, y: centerY - faceH / 2 + y });
+                    }
+                }
+            }
+        }
+
+        function generateFacePattern(w, h) {
+            var c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            var cx2 = c.getContext('2d');
+            cx2.fillStyle = 'rgba(200,195,185,0.6)';
+            cx2.beginPath();
+            cx2.ellipse(w / 2, h * 0.45, w * 0.38, h * 0.42, 0, 0, Math.PI * 2);
+            cx2.fill();
+            cx2.fillStyle = 'rgba(180,175,165,0.5)';
+            cx2.beginPath();
+            cx2.ellipse(w * 0.38, h * 0.38, 5, 3, 0, 0, Math.PI * 2);
+            cx2.fill();
+            cx2.beginPath();
+            cx2.ellipse(w * 0.62, h * 0.38, 5, 3, 0, 0, Math.PI * 2);
+            cx2.fill();
+            cx2.strokeStyle = 'rgba(180,175,165,0.4)';
+            cx2.lineWidth = 1;
+            cx2.beginPath();
+            cx2.arc(w / 2, h * 0.55, 10, 0.1, Math.PI - 0.1);
+            cx2.stroke();
+            return cx2.getImageData(0, 0, w, h).data;
+        }
+
+        function initParticles() {
+            var w = window.innerWidth, h = window.innerHeight;
+            particles = [];
+            computeTargets();
+            for (var i = 0; i < NUM; i++) {
+                particles.push({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    tx: targetPositions[i % targetPositions.length].x,
+                    ty: targetPositions[i % targetPositions.length].y,
+                    r: 1 + Math.random() * 1.5,
+                    op: 0.3 + Math.random() * 0.3,
+                    drift: (Math.random() - 0.5) * 0.5,
+                    driftY: -0.1 - Math.random() * 0.3
+                });
+            }
+        }
+
+        canvas.addEventListener('click', function() {
+            if (phase === 0) {
+                phase = 1;
+                document.querySelector('.hint').style.opacity = '0';
+                document.getElementById('text').classList.add('visible');
+            }
+        });
+        canvas.addEventListener('touchstart', function() {
+            if (phase === 0) {
+                phase = 1;
+                document.querySelector('.hint').style.opacity = '0';
+                document.getElementById('text').classList.add('visible');
+            }
+        }, { passive: true });
+
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            var bg = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.6);
+            bg.addColorStop(0, '#151010');
+            bg.addColorStop(1, '#0a0a0a');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, w, h);
+
+            if (phase === 1) {
+                assemblyProgress = Math.min(1, assemblyProgress + 0.003);
+                if (assemblyProgress >= 1) { phase = 2; assembledTime = t; }
+            }
+            if (phase === 2 && t - assembledTime > 5000) { phase = 3; }
+            if (phase === 3) {
+                assemblyProgress = Math.max(0, assemblyProgress - 0.002);
+                if (assemblyProgress <= 0) { phase = 0; initParticles(); }
+            }
+
+            var ease = assemblyProgress;
+            ease = ease < 0.5 ? 2 * ease * ease : 1 - Math.pow(-2 * ease + 2, 2) / 2;
+
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
+                var px = p.x + (p.tx - p.x) * ease;
+                var py = p.y + (p.ty - p.y) * ease;
+                px += Math.sin(t * 0.001 + i) * p.drift * (1 - ease);
+                py += Math.cos(t * 0.0008 + i * 0.5) * 2 * (1 - ease);
+                var op = p.op * (0.3 + ease * 0.7);
+                ctx.beginPath();
+                ctx.arc(px, py, p.r * (1 - ease * 0.3), 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(180,170,150,' + op + ')';
+                ctx.fill();
+            }
+
+            requestAnimationFrame(draw);
+        }
+        initParticles();
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

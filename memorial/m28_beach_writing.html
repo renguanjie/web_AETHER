@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>沙滩 · 字迹</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #2a2520; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'STSong', 'SimSun', serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        .text { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 13px; color: rgba(60,50,40,0.3); letter-spacing: 4px; opacity: 0; transition: opacity 4s ease; }
+        .text.visible { opacity: 1; }
+        .hint { position: fixed; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(60,50,40,0.2); letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="text" id="text">海浪带走了字迹，带不走想念</div>
+    <div class="hint">静静等待，潮水会抹去一切</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+
+        var message = '想念你';
+        var pixels = [];
+        var waveX = 0;
+        var washing = false;
+        var washProgress = 0;
+        var washStarted = false;
+
+        function initPixels() {
+            var w = window.innerWidth, h = window.innerHeight;
+            var c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            var cx2 = c.getContext('2d');
+            cx2.fillStyle = 'rgba(80,70,55,0.5)';
+            cx2.font = '48px STSong, SimSun, serif';
+            cx2.textAlign = 'center';
+            cx2.textBaseline = 'middle';
+            cx2.fillText(message, w / 2, h * 0.45);
+            var imgData = cx2.getImageData(0, 0, w, h);
+            pixels = [];
+            for (var y = 0; y < h; y += 3) {
+                for (var x = 0; x < w; x += 3) {
+                    var idx = (y * w + x) * 4;
+                    if (imgData.data[idx + 3] > 50) {
+                        pixels.push({ x: x, y: y, op: 0.4 + Math.random() * 0.2, washed: false });
+                    }
+                }
+            }
+        }
+
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            var sandGrad = ctx.createLinearGradient(0, 0, 0, h);
+            sandGrad.addColorStop(0, '#c8b898');
+            sandGrad.addColorStop(0.6, '#b8a888');
+            sandGrad.addColorStop(1, '#a89878');
+            ctx.fillStyle = sandGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = 'rgba(0,0,0,0.02)';
+            for (var i = 0; i < 200; i++) {
+                ctx.fillRect((i * 73.7) % w, (i * 47.3) % h, 1, 1);
+            }
+
+            if (!washStarted) {
+                washStarted = true;
+                setTimeout(function() { washing = true; document.querySelector('.hint').style.opacity = '0'; }, 3000);
+            }
+
+            if (washing) {
+                washProgress = Math.min(1, washProgress + 0.002);
+                waveX = w * washProgress;
+                if (waveX > 0 && waveX < w) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(waveX, 0);
+                    for (var wy = 0; wy < h; wy += 5) {
+                        var wx = waveX + Math.sin(wy * 0.02 + t * 0.003) * 15 + Math.sin(wy * 0.05 + t * 0.002) * 5;
+                        ctx.lineTo(wx, wy);
+                    }
+                    ctx.lineTo(0, h);
+                    ctx.lineTo(0, 0);
+                    ctx.closePath();
+                    var waterGrad = ctx.createLinearGradient(waveX - 80, 0, waveX, 0);
+                    waterGrad.addColorStop(0, 'rgba(120,140,160,0.05)');
+                    waterGrad.addColorStop(0.5, 'rgba(100,130,150,0.15)');
+                    waterGrad.addColorStop(1, 'rgba(100,130,150,0.25)');
+                    ctx.fillStyle = waterGrad;
+                    ctx.fill();
+                    ctx.restore();
+
+                    ctx.beginPath();
+                    for (var fy = 0; fy < h; fy += 3) {
+                        var fx = waveX + Math.sin(fy * 0.02 + t * 0.003) * 15 + Math.sin(fy * 0.05 + t * 0.002) * 5;
+                        if (fy === 0) ctx.moveTo(fx, fy); else ctx.lineTo(fx, fy);
+                    }
+                    ctx.strokeStyle = 'rgba(220,220,210,0.15)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+
+            for (var j = 0; j < pixels.length; j++) {
+                var p = pixels[j];
+                if (washing && p.x < waveX + 20 && !p.washed) {
+                    p.washed = true;
+                }
+                if (!p.washed) {
+                    ctx.fillStyle = 'rgba(80,70,55,' + p.op + ')';
+                    ctx.fillRect(p.x, p.y, 2, 2);
+                } else if (washing) {
+                    p.x += 0.5 + Math.sin(t * 0.002 + j) * 0.3;
+                    p.y += Math.sin(t * 0.001 + j * 0.5) * 0.2 - 0.1;
+                    p.op *= 0.995;
+                    if (p.op > 0.01) {
+                        ctx.fillStyle = 'rgba(80,70,55,' + p.op + ')';
+                        ctx.fillRect(p.x, p.y, 1, 1);
+                    }
+                }
+            }
+
+            if (washProgress >= 1) {
+                document.getElementById('text').classList.add('visible');
+            }
+
+            requestAnimationFrame(draw);
+        }
+        initPixels();
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

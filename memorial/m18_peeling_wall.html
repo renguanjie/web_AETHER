@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>墙皮 · 剥落</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #2a2520; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'STSong', 'SimSun', serif; }
+        canvas { display: block; width: 100vw; height: 100vh; cursor: pointer; }
+        .text { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 13px; color: rgba(60,50,40,0.3); letter-spacing: 4px; opacity: 0; transition: opacity 4s ease; }
+        .text.visible { opacity: 1; }
+        .hint { position: fixed; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(60,50,40,0.2); letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="text" id="text">墙上的字迹，是时间留给你的信</div>
+    <div class="hint">点击墙面，剥落岁月的表层</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+
+        var flakes = [];
+        var messageShown = false;
+        var wallX, wallY, wallW, wallH;
+        var TOTAL_FLAKES = 80;
+
+        function initFlakes() {
+            var w = window.innerWidth, h = window.innerHeight;
+            wallW = w * 0.7; wallH = h * 0.6;
+            wallX = (w - wallW) / 2; wallY = (h - wallH) / 2;
+            flakes = [];
+            for (var i = 0; i < TOTAL_FLAKES; i++) {
+                flakes.push({
+                    x: wallX + Math.random() * wallW,
+                    y: wallY + Math.random() * wallH,
+                    w: 15 + Math.random() * 40,
+                    h: 10 + Math.random() * 25,
+                    angle: (Math.random() - 0.5) * 0.3,
+                    progress: 0,
+                    speed: 0.005 + Math.random() * 0.01,
+                    triggered: false
+                });
+            }
+        }
+
+        canvas.addEventListener('click', function(e) {
+            if (messageShown) return;
+            // Trigger flakes near click
+            for (var i = 0; i < flakes.length; i++) {
+                var f = flakes[i];
+                if (f.triggered) continue;
+                var dx = e.clientX - f.x, dy = e.clientY - f.y;
+                if (Math.sqrt(dx * dx + dy * dy) < 80) {
+                    f.triggered = true;
+                }
+            }
+            // Chain: trigger a few more randomly
+            var untriggered = flakes.filter(function(fl) { return !fl.triggered; });
+            for (var j = 0; j < Math.min(8, untriggered.length); j++) {
+                untriggered[Math.floor(Math.random() * untriggered.length)].triggered = true;
+            }
+            var count = flakes.filter(function(fl) { return fl.triggered; }).length;
+            if (count > TOTAL_FLAKES * 0.5) {
+                messageShown = true;
+                document.getElementById('text').classList.add('visible');
+                document.querySelector('.hint').style.opacity = '0';
+            }
+        });
+
+        canvas.addEventListener('touchstart', function(e) {
+            var touch = e.touches[0];
+            canvas.dispatchEvent(new MouseEvent('click', { clientX: touch.clientX, clientY: touch.clientY }));
+        }, { passive: true });
+
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            var roomGrad = ctx.createLinearGradient(0, 0, 0, h);
+            roomGrad.addColorStop(0, '#252018');
+            roomGrad.addColorStop(1, '#1a1510');
+            ctx.fillStyle = roomGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            // Base wall underneath
+            ctx.fillStyle = '#3a3025';
+            ctx.fillRect(wallX, wallY, wallW, wallH);
+
+            // Hidden message
+            ctx.save();
+            ctx.fillStyle = 'rgba(200,190,170,0.12)';
+            ctx.font = '14px STSong, SimSun, serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('你一直在我心里', w / 2, h / 2);
+            ctx.restore();
+
+            // Paint flakes
+            for (var i = 0; i < flakes.length; i++) {
+                var f = flakes[i];
+                if (f.triggered) {
+                    f.progress = Math.min(1, f.progress + f.speed);
+                }
+                if (f.progress < 1) {
+                    ctx.save();
+                    ctx.translate(f.x, f.y);
+                    ctx.rotate(f.angle);
+                    var op = 1 - f.progress;
+                    ctx.fillStyle = 'rgba(180,170,155,' + op + ')';
+                    ctx.fillRect(-f.w / 2, -f.h / 2, f.w, f.h);
+                    // Crack lines
+                    if (f.progress > 0.3) {
+                        ctx.strokeStyle = 'rgba(60,50,40,' + (f.progress * 0.5) + ')';
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(-f.w / 2, -f.h / 2);
+                        ctx.lineTo(-f.w / 2 + f.w * 0.3, -f.h / 2 + 3);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            }
+
+            // Wall texture
+            ctx.fillStyle = 'rgba(0,0,0,0.03)';
+            for (var j = 0; j < wallW; j += 4) {
+                for (var k = 0; k < wallH; k += 4) {
+                    if (Math.random() > 0.7) {
+                        ctx.fillRect(wallX + j, wallY + k, 2, 2);
+                    }
+                }
+            }
+
+            // Border
+            ctx.strokeStyle = 'rgba(60,50,40,0.15)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(wallX, wallY, wallW, wallH);
+
+            requestAnimationFrame(draw);
+        }
+        initFlakes();
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

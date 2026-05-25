@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>千纸鹤 · 祈福</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a12; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'STSong', 'SimSun', serif; }
+        canvas { display: block; width: 100vw; height: 100vh; cursor: pointer; }
+        .text { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 13px; color: rgba(200,195,185,0.15); letter-spacing: 4px; opacity: 0; transition: opacity 4s ease; }
+        .text.visible { opacity: 1; }
+        .hint { position: fixed; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(200,195,185,0.1); letter-spacing: 3px; }
+        .counter { position: fixed; top: 8vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(200,195,185,0.15); letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="counter" id="counter">已折 0 只</div>
+    <div class="text" id="text">每一只纸鹤，都带着一个愿望飞向远方</div>
+    <div class="hint">点击屏幕，折一只纸鹤</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+
+        var cranes = [];
+        var count = 0;
+
+        function drawCrane(x, y, size, foldProgress, op) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.globalAlpha = op;
+            var fold = Math.min(1, foldProgress);
+            ctx.beginPath();
+            ctx.moveTo(0, -size * fold);
+            ctx.lineTo(-size * 0.6 * fold, 0);
+            ctx.lineTo(0, size * 0.4 * fold);
+            ctx.lineTo(size * 0.6 * fold, 0);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(200,210,220,' + (0.3 * fold) + ')';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(200,210,220,' + (0.4 * fold) + ')';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+            if (fold > 0.3) {
+                ctx.beginPath();
+                ctx.moveTo(-size * 0.6 * fold, 0);
+                ctx.quadraticCurveTo(-size * fold * 1.2, -size * 0.3, -size * 0.8 * fold, -size * 0.6 * fold);
+                ctx.lineTo(0, -size * 0.3 * fold);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(180,190,200,' + (0.2 * fold) + ')';
+                ctx.fill();
+            }
+            if (fold > 0.3) {
+                ctx.beginPath();
+                ctx.moveTo(size * 0.6 * fold, 0);
+                ctx.quadraticCurveTo(size * fold * 1.2, -size * 0.3, size * 0.8 * fold, -size * 0.6 * fold);
+                ctx.lineTo(0, -size * 0.3 * fold);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(180,190,200,' + (0.2 * fold) + ')';
+                ctx.fill();
+            }
+            if (fold > 0.5) {
+                ctx.beginPath();
+                ctx.moveTo(0, -size * fold);
+                ctx.lineTo(-size * 0.15 * fold, -size * 1.3 * fold);
+                ctx.lineTo(size * 0.05 * fold, -size * 1.1 * fold);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(190,200,210,' + (0.25 * fold) + ')';
+                ctx.fill();
+            }
+            if (fold > 0.5) {
+                ctx.beginPath();
+                ctx.moveTo(0, size * 0.4 * fold);
+                ctx.lineTo(size * 0.1 * fold, size * 0.8 * fold);
+                ctx.lineTo(-size * 0.05 * fold, size * 0.7 * fold);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(190,200,210,' + (0.2 * fold) + ')';
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        canvas.addEventListener('click', function(e) {
+            count++;
+            document.getElementById('counter').textContent = '已折 ' + count + ' 只';
+            cranes.push({
+                x: e.clientX, y: e.clientY,
+                foldProgress: 0,
+                op: 0.9,
+                vy: 0,
+                vx: (Math.random() - 0.5) * 0.3,
+                size: 15 + Math.random() * 10
+            });
+            if (count >= 3) {
+                document.getElementById('text').classList.add('visible');
+                document.querySelector('.hint').style.opacity = '0';
+            }
+        });
+
+        canvas.addEventListener('touchstart', function(e) {
+            var t = e.touches[0];
+            canvas.dispatchEvent(new MouseEvent('click', { clientX: t.clientX, clientY: t.clientY }));
+        }, { passive: true });
+
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+            var bg = ctx.createLinearGradient(0, 0, 0, h);
+            bg.addColorStop(0, '#0a0a15');
+            bg.addColorStop(1, '#0a0a10');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, w, h);
+
+            for (var i = 0; i < 50; i++) {
+                var sx = (i * 137.5) % w;
+                var sy = (i * 97.3) % (h * 0.5);
+                var twinkle = 0.1 + Math.sin(t * 0.002 + i * 1.7) * 0.1;
+                ctx.beginPath();
+                ctx.arc(sx, sy, 0.5 + Math.random() * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(200,210,220,' + twinkle + ')';
+                ctx.fill();
+            }
+
+            for (var j = 0; j < cranes.length; j++) {
+                var c = cranes[j];
+                c.foldProgress = Math.min(1, c.foldProgress + 0.01);
+                if (c.foldProgress >= 1) {
+                    c.vy -= 0.02;
+                    c.y += c.vy - 0.3;
+                    c.x += c.vx + Math.sin(t * 0.001 + j) * 0.2;
+                    c.op *= 0.9998;
+                }
+                drawCrane(c.x, c.y, c.size, c.foldProgress, c.op);
+            }
+
+            requestAnimationFrame(draw);
+        }
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

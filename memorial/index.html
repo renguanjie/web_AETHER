@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>祭奠 · 线上缅怀</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            background: #000;
+            color: rgba(220, 215, 210, 0.75);
+            font-family: -apple-system, 'Helvetica Neue', 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===== Hero ===== */
+        .hero {
+            min-height: 60vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 80px 24px 40px;
+            position: relative;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1px;
+            height: 60px;
+            background: linear-gradient(180deg, transparent, rgba(200,195,185,0.15));
+        }
+        .hero-line {
+            opacity: 0;
+            animation: heroFadeIn 4s ease-in-out 0.5s forwards;
+        }
+        .hero-title {
+            font-family: 'STSong', 'SimSun', 'Noto Serif SC', serif;
+            font-size: clamp(24px, 4vw, 42px);
+            font-weight: 400;
+            letter-spacing: 8px;
+            color: rgba(220, 215, 210, 0.85);
+            margin-bottom: 20px;
+        }
+        .hero-sub {
+            font-size: clamp(12px, 1.5vw, 15px);
+            letter-spacing: 4px;
+            color: rgba(200, 195, 185, 0.35);
+            font-weight: 300;
+        }
+        @keyframes heroFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== Nav ===== */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 20px 24px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .nav-item {
+            font-family: 'STSong', 'SimSun', serif;
+            font-size: 13px;
+            letter-spacing: 2px;
+            color: rgba(200, 195, 185, 0.35);
+            cursor: pointer;
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            transition: color 1s ease, border-color 1s ease;
+            border-bottom: 1px solid transparent;
+        }
+        .nav-item:hover,
+        .nav-item.active {
+            color: rgba(220, 215, 210, 0.75);
+            border-bottom-color: rgba(200, 195, 185, 0.2);
+        }
+
+        /* ===== Section Label ===== */
+        .section-label {
+            font-family: 'STSong', 'SimSun', serif;
+            font-size: 11px;
+            letter-spacing: 6px;
+            color: rgba(200, 195, 185, 0.2);
+            padding: 60px 24px 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* ===== Grid ===== */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px 80px;
+        }
+
+        /* ===== Card ===== */
+        .card {
+            position: relative;
+            aspect-ratio: 4 / 5;
+            overflow: hidden;
+            cursor: pointer;
+            background: #0a0a0a;
+            transition: opacity 1.2s ease-in-out, transform 1.2s ease-in-out;
+        }
+        .card.filtered-out {
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            visibility: hidden;
+        }
+
+        /* Card image */
+        .card-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) brightness(0.3) saturate(0.15);
+            transition: filter 1.5s ease-in-out, transform 1.5s ease-in-out;
+        }
+        .card:hover .card-img {
+            filter: grayscale(50%) brightness(0.45) saturate(0.35);
+            transform: scale(1.03);
+        }
+
+        /* Noise texture overlay */
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.45);
+            transition: background 1.5s ease-in-out;
+            pointer-events: none;
+        }
+        .card:hover::before {
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        /* Subtle grain */
+        .card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            background-size: 128px 128px;
+            pointer-events: none;
+        }
+
+        .card-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 28px 24px;
+            z-index: 3;
+            transform: translateY(8px);
+            transition: transform 1.2s ease-in-out;
+        }
+        .card:hover .card-content {
+            transform: translateY(0);
+        }
+        .card-category {
+            font-size: 9px;
+            letter-spacing: 3px;
+            color: rgba(200, 195, 185, 0.25);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: 300;
+        }
+        .card-title {
+            font-family: 'STSong', 'SimSun', serif;
+            font-size: 17px;
+            font-weight: 400;
+            letter-spacing: 3px;
+            color: rgba(220, 215, 210, 0.85);
+            margin-bottom: 6px;
+        }
+        .card-desc {
+            font-size: 12px;
+            color: rgba(200, 195, 185, 0.3);
+            letter-spacing: 1px;
+            font-weight: 300;
+            line-height: 1.8;
+            margin-bottom: 16px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 1.2s ease-in-out, opacity 1.2s ease-in-out;
+            opacity: 0;
+        }
+        .card:hover .card-desc {
+            max-height: 60px;
+            opacity: 1;
+        }
+        .card-actions {
+            display: flex;
+            gap: 16px;
+            opacity: 0;
+            transform: translateY(5px);
+            transition: opacity 1s ease-in-out 0.3s, transform 1s ease-in-out 0.3s;
+        }
+        .card:hover .card-actions {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .card-btn {
+            font-family: 'STSong', 'SimSun', serif;
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: rgba(200, 195, 185, 0.4);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(200, 195, 185, 0.15);
+            transition: color 0.8s ease, border-color 0.8s ease;
+        }
+        .card-btn:hover {
+            color: rgba(220, 215, 210, 0.75);
+            border-bottom-color: rgba(200, 195, 185, 0.4);
+        }
+
+        /* ===== Footer ===== */
+        .footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 60px 24px;
+            text-align: center;
+        }
+        .footer p {
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: rgba(200, 195, 185, 0.2);
+            font-weight: 300;
+        }
+        .footer .en {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-style: italic;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: rgba(200, 195, 185, 0.25);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1px; }
+            .hero { min-height: 45vh; padding: 60px 20px 30px; }
+            .card-desc { max-height: 60px; opacity: 1; }
+            .card-actions { opacity: 1; transform: translateY(0); }
+            .card-content { transform: translateY(0); }
+        }
+
+        /* ===== Scroll reveal ===== */
+        .card {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .card.revealed {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 1.5s ease-in-out, transform 1.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Hero -->
+<section class="hero">
+    <h1 class="hero-title hero-line">在这里，让思念跨越时间的维度</h1>
+    <p class="hero-sub hero-line">线上祭奠与缅怀模板</p>
+</section>
+
+<!-- Navigation -->
+<nav class="nav" id="nav">
+    <button class="nav-item active" data-category="all">全部</button>
+    <button class="nav-item" data-category="light">光影与星空</button>
+    <button class="nav-item" data-category="nature">自然与万物</button>
+    <button class="nav-item" data-category="time">岁月与痕迹</button>
+    <button class="nav-item" data-category="digital">数字生命</button>
+    <button class="nav-item" data-category="ritual">祈福与仪式</button>
+</nav>
+
+<!-- Cards -->
+<main id="cards-container"></main>
+
+<!-- Footer -->
+<footer class="footer">
+    <p><span class="en">Memory never fades.</span>献给每一个被思念的人</p>
+</footer>
+
+<script>
+    var cards = [
+        // 光影与星空 — warm, glowing, celestial
+        { id: 'm01_candle', cat: 'light', title: '烛光 · 守望', desc: '一束烛光，彻夜不灭',
+          bg: 'radial-gradient(ellipse at 50% 60%, #1a1208 0%, #0d0a05 40%, #000 100%)' },
+        { id: 'm02_sky_lantern', cat: 'light', title: '孔明灯 · 寄托', desc: '升空的灯，带着未说的话',
+          bg: 'linear-gradient(180deg, #0a0a15 0%, #121220 40%, #1a1510 100%)' },
+        { id: 'm03_star_map', cat: 'light', title: '星图 · 化作星辰', desc: '你变成了夜空中的一颗星',
+          bg: 'radial-gradient(ellipse at 30% 40%, #151525 0%, #0a0a12 60%, #000 100%)' },
+        { id: 'm04_lighthouse', cat: 'light', title: '灯塔 · 指引', desc: '你是我穿越迷雾的灯塔',
+          bg: 'linear-gradient(180deg, #0a0a10 0%, #0f0f18 50%, #151520 100%)' },
+        { id: 'm05_tyndall', cat: 'light', title: '晨曦 · 丁达尔', desc: '光穿过树林，像你穿过我的记忆',
+          bg: 'radial-gradient(ellipse at 50% 20%, #1a1810 0%, #0f0e0a 50%, #000 100%)' },
+        { id: 'm10_snow_night', cat: 'light', title: '雪夜 · 守夜', desc: '无言，无别，无悲',
+          bg: 'linear-gradient(180deg, #0e0e14 0%, #121218 50%, #0a0a10 100%)' },
+
+        // 自然与万物 — muted greens, blues, earth tones
+        { id: 'm06_water_reflection', cat: 'nature', title: '倒影 · 镜像', desc: '水面之下，是另一个世界',
+          bg: 'linear-gradient(180deg, #0a0f12 0%, #0f1518 50%, #0a1012 100%)' },
+        { id: 'm07_autumn_leaves', cat: 'nature', title: '落叶 · 归根', desc: '落叶不是无情物',
+          bg: 'radial-gradient(ellipse at 40% 50%, #15100a 0%, #0f0c08 50%, #000 100%)' },
+        { id: 'm08_lake_ripple', cat: 'nature', title: '湖心 · 涟漪', desc: '每一次想念，都是一圈涟漪',
+          bg: 'radial-gradient(ellipse at 50% 50%, #101418 0%, #0a0e12 60%, #050808 100%)' },
+        { id: 'm09_white_flower', cat: 'nature', title: '风信子 · 绽放', desc: '枯萎的花，也曾为你盛开',
+          bg: 'radial-gradient(ellipse at 50% 40%, #141414 0%, #0e0e0e 50%, #000 100%)' },
+        { id: 'm11_dandelion', cat: 'nature', title: '蒲公英 · 远行', desc: '思念随风，飘向远方',
+          bg: 'linear-gradient(180deg, #10120e 0%, #0c0e0a 50%, #080a06 100%)' },
+        { id: 'm27_wind_chimes', cat: 'nature', title: '风铃 · 檐下', desc: '风铃响了，像你在耳边说话',
+          bg: 'radial-gradient(ellipse at 60% 30%, #141010 0%, #0e0c0c 50%, #000 100%)' },
+        { id: 'm28_beach_writing', cat: 'nature', title: '沙滩 · 字迹', desc: '海浪带走了字迹，带不走想念',
+          bg: 'linear-gradient(180deg, #141210 0%, #100e0c 50%, #0a0808 100%)' },
+        { id: 'm29_zen_garden', cat: 'nature', title: '枯山水 · 涟漪', desc: '沙纹会平，石不移，念不散',
+          bg: 'radial-gradient(ellipse at 50% 60%, #161410 0%, #0e0c0a 50%, #080806 100%)' },
+
+        // 岁月与痕迹 — sepia, aged, weathered
+        { id: 'm12_paper_boat', cat: 'time', title: '纸船 · 摆渡', desc: '一只纸船，渡不过思念的河',
+          bg: 'linear-gradient(180deg, #0a0e12 0%, #0e1218 50%, #080a0e 100%)' },
+        { id: 'm13_hourglass', cat: 'time', title: '沙漏 · 逆流', desc: '时间无法倒流，但记忆可以',
+          bg: 'radial-gradient(ellipse at 50% 45%, #16120a 0%, #0e0c08 50%, #000 100%)' },
+        { id: 'm14_fading_ink', cat: 'time', title: '墨迹 · 消逝', desc: '信还在，字迹却慢慢淡了',
+          bg: 'radial-gradient(ellipse at 50% 40%, #18160e 0%, #100e0a 50%, #0a0a08 100%)' },
+        { id: 'm15_stopped_clock', cat: 'time', title: '钟表 · 停滞', desc: '时间在你说再见的那一刻，就停了',
+          bg: 'radial-gradient(ellipse at 50% 50%, #141210 0%, #0e0c0a 50%, #000 100%)' },
+        { id: 'm16_ash_assembly', cat: 'time', title: '灰烬 · 重组', desc: '碎灰聚成你的轮廓，却再也触不到',
+          bg: 'radial-gradient(ellipse at 50% 50%, #12100e 0%, #0c0a08 50%, #000 100%)' },
+        { id: 'm18_peeling_wall', cat: 'time', title: '墙皮 · 剥落', desc: '墙上的字迹，是时间留给你的信',
+          bg: 'linear-gradient(180deg, #141210 0%, #100e0c 50%, #0a0808 100%)' },
+        { id: 'm24_disk_defrag', cat: 'time', title: '磁盘 · 碎片', desc: '碎片整理完成，记忆已重新排列',
+          bg: 'linear-gradient(180deg, #0a0e0a 0%, #0c100c 50%, #080a08 100%)' },
+
+        // 数字生命 — cold, monochrome, electric
+        { id: 'm19_ping_timeout', cat: 'digital', title: 'Ping · 超时', desc: '永远在线，永远无人回应',
+          bg: 'linear-gradient(180deg, #0a0c0a 0%, #0e100e 50%, #060806 100%)' },
+        { id: 'm20_pixel_disintegration', cat: 'digital', title: '数据块 · 消散', desc: '数据可以删除，但记忆不会',
+          bg: 'linear-gradient(180deg, #0c0c10 0%, #0e0e12 50%, #08080a 100%)' },
+        { id: 'm21_audio_waveform', cat: 'digital', title: '波纹 · 频率', desc: '你的声音，是最安静的频率',
+          bg: 'linear-gradient(180deg, #0a0c10 0%, #0c0e14 50%, #06080c 100%)' },
+        { id: 'm22_cyber_tombstone', cat: 'digital', title: '赛博 · 墓碑', desc: '数字世界里的最后一块碑',
+          bg: 'linear-gradient(180deg, #0a0a0c 0%, #0e0e10 50%, #08080a 100%)' },
+        { id: 'm23_green_cursor', cat: 'digital', title: '光标 · 未发送', desc: '对方已离线 327 天',
+          bg: 'linear-gradient(180deg, #0a0e0a 0%, #0c100c 50%, #060806 100%)' },
+
+        // 祈福与仪式 — warm ritual, incense, ceremony
+        { id: 'm17_vinyl_static', cat: 'ritual', title: '留声机 · 杂音', desc: '唱片还在转，但歌声已经远了',
+          bg: 'radial-gradient(ellipse at 50% 50%, #14100c 0%, #0e0c08 50%, #000 100%)' },
+        { id: 'm25_paper_crane', cat: 'ritual', title: '千纸鹤 · 祈福', desc: '每一只纸鹤，都带着一个愿望',
+          bg: 'radial-gradient(ellipse at 50% 35%, #161210 0%, #0e0c0a 50%, #000 100%)' },
+        { id: 'm26_incense_smoke', cat: 'ritual', title: '青烟 · 袅袅', desc: '烟散了，思念没有',
+          bg: 'radial-gradient(ellipse at 50% 70%, #121010 0%, #0c0c0c 50%, #060606 100%)' },
+        { id: 'm30_staircase', cat: 'ritual', title: '阶梯 · 天国', desc: '你走得很远，但从未离开',
+          bg: 'linear-gradient(180deg, #0e0e18 0%, #121220 40%, #0a0a10 100%)' },
+    ];
+
+    var catNames = {
+        light: '光影与星空',
+        nature: '自然与万物',
+        time: '岁月与痕迹',
+        digital: '数字生命',
+        ritual: '祈福与仪式'
+    };
+
+    var container = document.getElementById('cards-container');
+    var currentCat = 'all';
+
+    function buildCards() {
+        var html = '';
+        var lastCat = '';
+        var gridOpen = false;
+        for (var i = 0; i < cards.length; i++) {
+            var c = cards[i];
+            if (c.cat !== lastCat) {
+                if (gridOpen) { html += '</div>'; gridOpen = false; }
+                html += '<div class="section-label" data-cat="' + c.cat + '">' + catNames[c.cat] + '</div>';
+                lastCat = c.cat;
+            }
+            if (!gridOpen) { html += '<div class="grid">'; gridOpen = true; }
+            html += '<div class="card" data-cat="' + c.cat + '" data-id="' + c.id + '">';
+            html += '<img class="card-img" src="./imgs/' + c.id + '.jpg" alt="' + c.title + '" loading="lazy">';
+            html += '<div class="card-overlay"></div>';
+            html += '<div class="card-content">';
+            html += '<div class="card-category">' + catNames[c.cat] + '</div>';
+            html += '<div class="card-title">' + c.title + '</div>';
+            html += '<div class="card-desc">' + c.desc + '</div>';
+            html += '<div class="card-actions">';
+            html += '<button class="card-btn" onclick="enterPage(\'' + c.id + '\')">步入此境</button>';
+            html += '<button class="card-btn" onclick="copyCode(\'' + c.id + '\')">封存代码</button>';
+            html += '</div></div></div>';
+        }
+        if (gridOpen) html += '</div>';
+        container.innerHTML = html;
+        observeCards();
+    }
+
+    var isFileProtocol = location.protocol === 'file:';
+
+    function enterPage(id) {
+        if (isFileProtocol) {
+            window.open(id + '.html', '_blank');
+        } else {
+            window.open('/memorial/' + id + '.html', '_blank');
+        }
+    }
+
+    function copyCode(id) {
+        var path = isFileProtocol ? (id + '.html') : ('/memorial/' + id + '.html');
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', path, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(xhr.responseText).then(function() {
+                        showToast('代码已封存');
+                    });
+                } else {
+                    var ta = document.createElement('textarea');
+                    ta.value = xhr.responseText;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    showToast('代码已封存');
+                }
+            }
+        };
+        xhr.send();
+    }
+
+    function showToast(msg) {
+        var existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+        var toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = msg;
+        toast.style.cssText = 'position:fixed;bottom:8vh;left:50%;transform:translateX(-50%);font-size:12px;letter-spacing:3px;color:rgba(200,195,185,0.4);font-family:STSong,SimSun,serif;padding:12px 24px;border:1px solid rgba(200,195,185,0.1);opacity:0;transition:opacity 1.5s ease;z-index:999;background:rgba(0,0,0,0.8);';
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.style.opacity = '1'; }, 50);
+        setTimeout(function() { toast.style.opacity = '0'; setTimeout(function() { toast.remove(); }, 1500); }, 2500);
+    }
+
+    document.getElementById('nav').addEventListener('click', function(e) {
+        if (!e.target.classList.contains('nav-item')) return;
+        document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+        e.target.classList.add('active');
+        currentCat = e.target.dataset.category;
+        filterCards();
+    });
+
+    function filterCards() {
+        document.querySelectorAll('.card').forEach(function(card) {
+            if (currentCat === 'all' || card.dataset.cat === currentCat) {
+                card.classList.remove('filtered-out');
+            } else {
+                card.classList.add('filtered-out');
+            }
+        });
+        document.querySelectorAll('.section-label').forEach(function(label) {
+            if (currentCat === 'all' || label.dataset.cat === currentCat) {
+                label.style.display = '';
+            } else {
+                label.style.display = 'none';
+            }
+        });
+    }
+
+    function observeCards() {
+        var observer = new IntersectionObserver(function(entries) {
+            for (var i = 0; i < entries.length; i++) {
+                if (entries[i].isIntersecting) {
+                    entries[i].target.classList.add('revealed');
+                    observer.unobserve(entries[i].target);
+                }
+            }
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+        document.querySelectorAll('.card').forEach(function(card) {
+            observer.observe(card);
+        });
+    }
+
+    buildCards();
+</script>
+</body>
+</html>

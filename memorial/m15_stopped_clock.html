@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>钟表 · 停滞</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'STSong', 'SimSun', serif; }
+        canvas { display: block; }
+        .text { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 13px; color: rgba(200,195,185,0.2); letter-spacing: 4px; opacity: 0; transition: opacity 4s ease; }
+        .text.visible { opacity: 1; }
+        .hint { position: fixed; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(200,195,185,0.1); letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="text" id="text">时间在你说再见的那一刻，就停了</div>
+    <div class="hint">点击表盘，触碰停滞的时光</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+
+        var touched = false;
+        var tremble = 0;
+        var hourAngle = -Math.PI / 3;
+        var minuteAngle = Math.PI / 6;
+        var secondAngle = -Math.PI / 2;
+
+        canvas.addEventListener('click', function() {
+            if (!touched) { touched = true; document.getElementById('text').classList.add('visible'); document.querySelector('.hint').style.opacity = '0'; }
+        });
+        canvas.addEventListener('touchstart', function() {
+            if (!touched) { touched = true; document.getElementById('text').classList.add('visible'); document.querySelector('.hint').style.opacity = '0'; }
+        }, { passive: true });
+
+        function drawWatch(cx, cy, r, t) {
+            tremble = Math.sin(t * 0.01) * 0.02 + Math.sin(t * 0.007) * 0.015;
+
+            // Outer ring shadow
+            ctx.save();
+            ctx.shadowColor = 'rgba(200,180,140,0.08)';
+            ctx.shadowBlur = 30;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 5;
+
+            // Outer gold ring
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            var ringGrad = ctx.createRadialGradient(cx, cy, r - 8, cx, cy, r + 2);
+            ringGrad.addColorStop(0, '#3a3528');
+            ringGrad.addColorStop(0.5, '#4a4235');
+            ringGrad.addColorStop(1, '#2a2520');
+            ctx.fillStyle = ringGrad;
+            ctx.fill();
+            ctx.restore();
+
+            // Inner face
+            ctx.beginPath();
+            ctx.arc(cx, cy, r - 5, 0, Math.PI * 2);
+            var faceGrad = ctx.createRadialGradient(cx, cy - r * 0.3, 0, cx, cy, r - 5);
+            faceGrad.addColorStop(0, '#f0e8d8');
+            faceGrad.addColorStop(0.7, '#e0d8c8');
+            faceGrad.addColorStop(1, '#d0c8b8');
+            ctx.fillStyle = faceGrad;
+            ctx.fill();
+
+            // Hour markers
+            for (var i = 0; i < 12; i++) {
+                var a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+                var isMain = i % 3 === 0;
+                var innerR = isMain ? r - 22 : r - 16;
+                var outerR = r - 10;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(a) * innerR, cy + Math.sin(a) * innerR);
+                ctx.lineTo(cx + Math.cos(a) * outerR, cy + Math.sin(a) * outerR);
+                ctx.strokeStyle = isMain ? 'rgba(60,50,40,0.7)' : 'rgba(60,50,40,0.35)';
+                ctx.lineWidth = isMain ? 2.5 : 1;
+                ctx.stroke();
+            }
+
+            // Minute tick marks
+            for (var j = 0; j < 60; j++) {
+                if (j % 5 === 0) continue;
+                var ma = (j / 60) * Math.PI * 2 - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(ma) * (r - 12), cy + Math.sin(ma) * (r - 12));
+                ctx.lineTo(cx + Math.cos(ma) * (r - 10), cy + Math.sin(ma) * (r - 10));
+                ctx.strokeStyle = 'rgba(60,50,40,0.15)';
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+
+            // Hour hand (stopped)
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(hourAngle);
+            ctx.beginPath();
+            ctx.moveTo(-3, 0);
+            ctx.lineTo(-2, -r * 0.4);
+            ctx.lineTo(0, -r * 0.55);
+            ctx.lineTo(2, -r * 0.4);
+            ctx.lineTo(3, 0);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(40,35,30,0.85)';
+            ctx.fill();
+            ctx.restore();
+
+            // Minute hand (stopped)
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(minuteAngle);
+            ctx.beginPath();
+            ctx.moveTo(-2, 0);
+            ctx.lineTo(-1.5, -r * 0.55);
+            ctx.lineTo(0, -r * 0.75);
+            ctx.lineTo(1.5, -r * 0.55);
+            ctx.lineTo(2, 0);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(40,35,30,0.85)';
+            ctx.fill();
+            ctx.restore();
+
+            // Second hand (trembling)
+            var secTremble = secondAngle + tremble;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(secTremble);
+            ctx.beginPath();
+            ctx.moveTo(0, r * 0.2);
+            ctx.lineTo(-0.5, 0);
+            ctx.lineTo(0, -r * 0.7);
+            ctx.lineTo(0.5, 0);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(160,40,30,0.7)';
+            ctx.fill();
+            ctx.restore();
+
+            // Center cap
+            ctx.beginPath();
+            ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(60,50,40,0.6)';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(160,40,30,0.8)';
+            ctx.fill();
+
+            // Glass reflection
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r - 5, 0, Math.PI * 2);
+            ctx.clip();
+            var glassGrad = ctx.createLinearGradient(cx - r * 0.5, cy - r * 0.5, cx + r * 0.3, cy + r * 0.3);
+            glassGrad.addColorStop(0, 'rgba(255,255,255,0.08)');
+            glassGrad.addColorStop(0.5, 'rgba(255,255,255,0)');
+            glassGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = glassGrad;
+            ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+            ctx.restore();
+
+            // Crown at top
+            ctx.beginPath();
+            ctx.arc(cx, cy - r - 6, 8, 0, Math.PI * 2);
+            var crownGrad = ctx.createRadialGradient(cx, cy - r - 6, 0, cx, cy - r - 6, 8);
+            crownGrad.addColorStop(0, '#5a5245');
+            crownGrad.addColorStop(1, '#3a3528');
+            ctx.fillStyle = crownGrad;
+            ctx.fill();
+        }
+
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            // Subtle vignette
+            var vig = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7);
+            vig.addColorStop(0, '#121212');
+            vig.addColorStop(1, '#0a0a0a');
+            ctx.fillStyle = vig;
+            ctx.fillRect(0, 0, w, h);
+
+            var watchR = Math.min(w, h) * 0.28;
+            drawWatch(w / 2, h * 0.42, watchR, t);
+
+            requestAnimationFrame(draw);
+        }
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>沙漏 · 逆流</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'STSong', 'SimSun', serif; }
+        canvas { display: block; }
+        .text { position: fixed; bottom: 15vh; left: 0; right: 0; text-align: center; font-size: 13px; color: rgba(200,195,185,0.3); letter-spacing: 4px; opacity: 0; transition: opacity 3s ease; }
+        .text.visible { opacity: 1; }
+        .hint { position: fixed; bottom: 8vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(200,195,185,0.15); letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="text" id="text">时间无法倒流，但记忆可以</div>
+    <div class="hint">拖拽沙漏翻转</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+        var topSand = 100, bottomSand = 0, flipped = false, showingText = false, startY = 0, dragging = false;
+        function dragStart(y) { dragging = true; startY = y; }
+        function dragMove(y) { if (!dragging) return; if (Math.abs(y - startY) > 80) { dragging = false; var t = topSand; topSand = bottomSand; bottomSand = t; if (!showingText) { showingText = true; document.getElementById('text').classList.add('visible'); } } }
+        function dragEnd() { dragging = false; }
+        canvas.addEventListener('mousedown', function(e) { dragStart(e.clientY); });
+        canvas.addEventListener('mousemove', function(e) { dragMove(e.clientY); });
+        canvas.addEventListener('mouseup', dragEnd);
+        canvas.addEventListener('touchstart', function(e) { dragStart(e.touches[0].clientY); }, { passive: true });
+        canvas.addEventListener('touchmove', function(e) { dragMove(e.touches[0].clientY); }, { passive: true });
+        canvas.addEventListener('touchend', dragEnd);
+        function draw() {
+            var w = window.innerWidth, h = window.innerHeight; ctx.clearRect(0, 0, w, h);
+            var cx = w/2, cy = h/2;
+            ctx.strokeStyle = 'rgba(200,195,185,0.15)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(cx-30, cy-70); ctx.lineTo(cx+30, cy-70); ctx.lineTo(cx+30, cy-10); ctx.quadraticCurveTo(cx+5, cy, cx+30, cy+10); ctx.lineTo(cx+30, cy+70); ctx.lineTo(cx-30, cy+70); ctx.lineTo(cx-30, cy+10); ctx.quadraticCurveTo(cx-5, cy, cx-30, cy-10); ctx.closePath(); ctx.stroke();
+            var tH = (topSand/100)*55; ctx.fillStyle = 'rgba(180,160,120,0.3)'; ctx.fillRect(cx-28, cy-68+(55-tH), 56, tH);
+            var bH = (bottomSand/100)*55; ctx.fillStyle = 'rgba(180,160,120,0.3)'; ctx.fillRect(cx-28, cy+68-bH, 56, bH);
+            if (topSand > 0) { ctx.strokeStyle = 'rgba(180,160,120,0.15)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx, cy-5); ctx.lineTo(cx, cy+5); ctx.stroke(); topSand = Math.max(0, topSand-0.05); bottomSand = Math.min(100, bottomSand+0.05); }
+            ctx.fillStyle = 'rgba(200,195,185,0.1)'; ctx.fillRect(cx-35, cy-72, 70, 4); ctx.fillRect(cx-35, cy+68, 70, 4);
+            requestAnimationFrame(draw);
+        }
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

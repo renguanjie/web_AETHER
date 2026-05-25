@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>数据块 · 消散</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'STSong', 'SimSun', serif; }
+        canvas { display: block; width: 100vw; height: 100vh; cursor: pointer; }
+        .text { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 13px; color: rgba(200,195,185,0.15); letter-spacing: 4px; opacity: 0; transition: opacity 4s ease; }
+        .text.visible { opacity: 1; }
+        .hint { position: fixed; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(200,195,185,0.1); letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="text" id="text">数据可以删除，像素可以消散，但记忆不会</div>
+    <div class="hint">点击照片，开始消解</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+
+        var blocks = [];
+        var disintegrating = false;
+        var disintegrateProgress = 0;
+        var imgW = 160, imgH = 200;
+        var BLOCK_SIZE = 8;
+        var centerX, centerY;
+
+        function generateImagePixels() {
+            var c = document.createElement('canvas');
+            c.width = imgW; c.height = imgH;
+            var cx2 = c.getContext('2d');
+            cx2.fillStyle = '#2a2520';
+            cx2.fillRect(0, 0, imgW, imgH);
+            cx2.fillStyle = '#8a8070';
+            cx2.beginPath();
+            cx2.arc(imgW / 2, imgH * 0.2, imgW * 0.2, 0, Math.PI * 2);
+            cx2.fill();
+            cx2.beginPath();
+            cx2.moveTo(imgW * 0.3, imgH * 0.4);
+            cx2.quadraticCurveTo(imgW * 0.5, imgH * 0.35, imgW * 0.7, imgH * 0.4);
+            cx2.lineTo(imgW * 0.75, imgH * 0.85);
+            cx2.lineTo(imgW * 0.25, imgH * 0.85);
+            cx2.closePath();
+            cx2.fill();
+            var glow = cx2.createRadialGradient(imgW / 2, imgH * 0.3, 0, imgW / 2, imgH * 0.3, imgW * 0.5);
+            glow.addColorStop(0, 'rgba(200,190,170,0.15)');
+            glow.addColorStop(1, 'rgba(200,190,170,0)');
+            cx2.fillStyle = glow;
+            cx2.fillRect(0, 0, imgW, imgH);
+            return cx2.getImageData(0, 0, imgW, imgH);
+        }
+
+        function initBlocks() {
+            var w = window.innerWidth, h = window.innerHeight;
+            centerX = w / 2; centerY = h * 0.4;
+            var imgData = generateImagePixels();
+            blocks = [];
+            for (var y = 0; y < imgH; y += BLOCK_SIZE) {
+                for (var x = 0; x < imgW; x += BLOCK_SIZE) {
+                    var idx = (y * imgW + x) * 4;
+                    var r = imgData.data[idx], g = imgData.data[idx + 1], b = imgData.data[idx + 2];
+                    blocks.push({
+                        sx: centerX - imgW / 2 + x,
+                        sy: centerY - imgH / 2 + y,
+                        x: centerX - imgW / 2 + x,
+                        y: centerY - imgH / 2 + y,
+                        r: r, g: g, b: b,
+                        vx: 0, vy: 0,
+                        fading: false,
+                        opacity: 1
+                    });
+                }
+            }
+        }
+
+        canvas.addEventListener('click', function() {
+            if (!disintegrating) {
+                disintegrating = true;
+                document.querySelector('.hint').style.opacity = '0';
+                document.getElementById('text').classList.add('visible');
+            }
+        });
+        canvas.addEventListener('touchstart', function() {
+            if (!disintegrating) {
+                disintegrating = true;
+                document.querySelector('.hint').style.opacity = '0';
+                document.getElementById('text').classList.add('visible');
+            }
+        }, { passive: true });
+
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            var bg = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.6);
+            bg.addColorStop(0, '#121210');
+            bg.addColorStop(1, '#0a0a0a');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, w, h);
+
+            if (disintegrating) {
+                disintegrateProgress = Math.min(1, disintegrateProgress + 0.002);
+            }
+
+            for (var i = 0; i < blocks.length; i++) {
+                var b = blocks[i];
+                if (disintegrating) {
+                    var threshold = ((b.sx * 7 + b.sy * 13) % 100) / 100;
+                    if (disintegrateProgress > threshold && !b.fading) {
+                        b.fading = true;
+                        b.vx = (Math.random() - 0.5) * 0.3;
+                        b.vy = -(0.2 + Math.random() * 0.5);
+                    }
+                    if (b.fading) {
+                        b.x += b.vx;
+                        b.y += b.vy;
+                        b.vy -= 0.01;
+                        b.opacity *= 0.998;
+                    }
+                }
+
+                if (b.opacity > 0.01) {
+                    ctx.fillStyle = 'rgba(' + b.r + ',' + b.g + ',' + b.b + ',' + b.opacity + ')';
+                    ctx.fillRect(b.x, b.y, BLOCK_SIZE, BLOCK_SIZE);
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+        initBlocks();
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

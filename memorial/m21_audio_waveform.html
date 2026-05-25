@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>波纹 · 频率</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'STSong', 'SimSun', serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        .text { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 13px; color: rgba(200,195,185,0.15); letter-spacing: 4px; opacity: 0; transition: opacity 4s ease; }
+        .text.visible { opacity: 1; }
+        .hint { position: fixed; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(200,195,185,0.1); letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="text" id="text">你的声音，是我听过最安静的频率</div>
+    <div class="hint">点击水面，唤起那段声音</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+
+        var waves = [];
+        var audioCtx = null;
+        var oscillator = null;
+        var gainNode = null;
+        var started = false;
+
+        canvas.addEventListener('click', function(e) {
+            if (!started) {
+                started = true;
+                document.querySelector('.hint').style.opacity = '0';
+                document.getElementById('text').classList.add('visible');
+                initAudio();
+            }
+            waves.push({ x: e.clientX, y: e.clientY, radius: 0, maxRadius: Math.max(window.innerWidth, window.innerHeight) * 0.6, opacity: 0.5, speed: 0.8 });
+        });
+
+        canvas.addEventListener('touchstart', function(e) {
+            if (!started) {
+                started = true;
+                document.querySelector('.hint').style.opacity = '0';
+                document.getElementById('text').classList.add('visible');
+                initAudio();
+            }
+            var t2 = e.touches[0];
+            waves.push({ x: t2.clientX, y: t2.clientY, radius: 0, maxRadius: Math.max(window.innerWidth, window.innerHeight) * 0.6, opacity: 0.5, speed: 0.8 });
+        }, { passive: true });
+
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 220;
+            gainNode.gain.value = 0;
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            gainNode.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 3);
+        }
+
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            var waterGrad = ctx.createLinearGradient(0, 0, 0, h);
+            waterGrad.addColorStop(0, '#0a0a12');
+            waterGrad.addColorStop(0.5, '#0f0f18');
+            waterGrad.addColorStop(1, '#0a0a10');
+            ctx.fillStyle = waterGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            for (var i = 0; i < 30; i++) {
+                var sy = (i * h / 30) + Math.sin(t * 0.0003 + i * 0.7) * 3;
+                ctx.strokeStyle = 'rgba(100,120,150,0.03)';
+                ctx.lineWidth = 0.5;
+                ctx.beginPath();
+                for (var x = 0; x < w; x += 4) {
+                    var yy = sy + Math.sin(x * 0.01 + t * 0.0005 + i) * 2;
+                    if (x === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+                }
+                ctx.stroke();
+            }
+
+            for (var j = 0; j < waves.length; j++) {
+                var wave = waves[j];
+                wave.radius += wave.speed;
+                wave.opacity *= 0.997;
+                if (wave.opacity < 0.01) continue;
+
+                for (var ring = 0; ring < 3; ring++) {
+                    var r = wave.radius - ring * 20;
+                    if (r < 0) continue;
+                    ctx.beginPath();
+                    ctx.arc(wave.x, wave.y, r, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(150,170,200,' + (wave.opacity * (1 - ring * 0.3)) + ')';
+                    ctx.lineWidth = 1.5 - ring * 0.3;
+                    ctx.stroke();
+                }
+
+                if (wave.radius > 20 && wave.radius < wave.maxRadius * 0.8) {
+                    var freq = 0.15;
+                    var amp = 5 * wave.opacity;
+                    ctx.beginPath();
+                    for (var a = 0; a < Math.PI * 2; a += 0.05) {
+                        var rr = wave.radius + Math.sin(a * freq * 20 + t * 0.002) * amp;
+                        var px = wave.x + Math.cos(a) * rr;
+                        var py = wave.y + Math.sin(a) * rr;
+                        if (a === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.strokeStyle = 'rgba(150,170,200,' + (wave.opacity * 0.3) + ')';
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+            }
+
+            waves = waves.filter(function(w) { return w.opacity > 0.01 && w.radius < w.maxRadius; });
+
+            requestAnimationFrame(draw);
+        }
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>蒲公英 · 远行</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: linear-gradient(180deg, #1a2030, #0a1020); font-family: 'STSong', 'SimSun', serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        .hint { position: fixed; bottom: 15vh; left: 0; right: 0; text-align: center; font-size: 12px; color: rgba(200,195,185,0.2); letter-spacing: 4px; transition: opacity 2s ease; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="hint" id="hint">长按屏幕，等一阵风来</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+        var pressing = false;
+        document.addEventListener('mousedown', function() { pressing = true; });
+        document.addEventListener('mouseup', function() { pressing = false; });
+        document.addEventListener('touchstart', function() { pressing = true; }, { passive: true });
+        document.addEventListener('touchend', function() { pressing = false; });
+        var seeds = [], released = false;
+        var px = 0.75, py = 0.7;
+        function drawDandelion() {
+            var cx = window.innerWidth * px, cy = window.innerHeight * py;
+            ctx.strokeStyle = 'rgba(80,90,60,0.4)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.quadraticCurveTo(cx-5, cy+40, cx+3, cy+80); ctx.stroke();
+            if (!released) { for (var i = 0; i < 30; i++) { var a = (i/30)*Math.PI*2, l = 15+Math.random()*5; ctx.strokeStyle = 'rgba(200,200,190,'+(0.3+Math.random()*0.3)+')'; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*l, cy+Math.sin(a)*l); ctx.stroke(); ctx.beginPath(); ctx.arc(cx+Math.cos(a)*l, cy+Math.sin(a)*l, 1, 0, Math.PI*2); ctx.fillStyle = 'rgba(200,200,190,0.4)'; ctx.fill(); } }
+        }
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight; ctx.clearRect(0, 0, w, h);
+            if (pressing && !released) { released = true; document.getElementById('hint').style.opacity = '0'; var cx = w*px, cy = h*py; var texts = ['思念随风','愿你安好','化作星光','永远想念','见字如面','念念不忘','一路平安']; for (var i = 0; i < 60; i++) { seeds.push({ x:cx, y:cy, vx:-1-Math.random()*3, vy:-1-Math.random()*2, r:1+Math.random()*1.5, op:0.6+Math.random()*0.4, text:i<texts.length?texts[i]:null, shown:false }); } }
+            for (var j = 0; j < seeds.length; j++) { var s = seeds[j]; s.x += s.vx; s.y += s.vy+Math.sin(t*0.001+j)*0.3; s.op *= 0.999; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fillStyle = 'rgba(200,200,190,'+s.op+')'; ctx.fill(); if(s.text&&!s.shown&&s.x<w*0.5){s.shown=true;ctx.fillStyle='rgba(200,195,185,'+(s.op*0.7)+')';ctx.font='11px STSong,serif';ctx.fillText(s.text,s.x+5,s.y);} }
+            if(!released) drawDandelion();
+            requestAnimationFrame(draw);
+        }
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

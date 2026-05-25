@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>风铃 · 檐下</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a12; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'STSong', 'SimSun', serif; }
+        canvas { display: block; width: 100vw; height: 100vh; cursor: pointer; }
+        .text { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 13px; color: rgba(200,195,185,0.12); letter-spacing: 4px; opacity: 0; transition: opacity 4s ease; }
+        .text.visible { opacity: 1; }
+        .hint { position: fixed; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(200,195,185,0.1); letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="text" id="text">风铃响了，像你在耳边说话</div>
+    <div class="hint">点击风铃，等一阵风来</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+
+        var swinging = false;
+        var swingAngle = 0;
+        var swingVelocity = 0;
+        var audioCtx = null;
+        var started = false;
+
+        function playChime(freq) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.value = 0.06;
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 2);
+        }
+
+        canvas.addEventListener('click', function() {
+            if (!started) {
+                started = true;
+                document.querySelector('.hint').style.opacity = '0';
+                document.getElementById('text').classList.add('visible');
+            }
+            swingVelocity = 0.05 + Math.random() * 0.05;
+            swinging = true;
+            playChime(800 + Math.random() * 400);
+            setTimeout(function() { playChime(1200 + Math.random() * 300); }, 200);
+        });
+
+        canvas.addEventListener('touchstart', function() {
+            if (!started) {
+                started = true;
+                document.querySelector('.hint').style.opacity = '0';
+                document.getElementById('text').classList.add('visible');
+            }
+            swingVelocity = 0.05 + Math.random() * 0.05;
+            swinging = true;
+            playChime(800 + Math.random() * 400);
+            setTimeout(function() { playChime(1200 + Math.random() * 300); }, 200);
+        }, { passive: true });
+
+        function drawChime(cx, cy, t) {
+            ctx.strokeStyle = 'rgba(150,140,130,0.2)';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(cx, 0);
+            ctx.lineTo(cx, cy - 20);
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(swingAngle);
+
+            ctx.beginPath();
+            ctx.ellipse(0, -20, 12, 4, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(120,110,100,0.3)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(150,140,130,0.2)';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+
+            for (var i = 0; i < 5; i++) {
+                var angle = (i / 5) * Math.PI * 2 + t * 0.001;
+                var tx = Math.cos(angle) * 8;
+                var tubeLen = 25 + i * 5;
+                var tubeSwing = Math.sin(t * 0.003 + i * 1.2) * 0.05 * (swinging ? 3 : 1);
+                ctx.save();
+                ctx.translate(tx, -15);
+                ctx.rotate(tubeSwing);
+                ctx.beginPath();
+                ctx.moveTo(-2, 0);
+                ctx.lineTo(-1.5, tubeLen);
+                ctx.lineTo(1.5, tubeLen);
+                ctx.lineTo(2, 0);
+                ctx.closePath();
+                var tubeGrad = ctx.createLinearGradient(0, 0, 0, tubeLen);
+                tubeGrad.addColorStop(0, 'rgba(180,170,150,0.25)');
+                tubeGrad.addColorStop(1, 'rgba(160,150,130,0.1)');
+                ctx.fillStyle = tubeGrad;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            var clapperSwing = Math.sin(t * 0.004) * 0.1 * (swinging ? 4 : 1);
+            ctx.save();
+            ctx.rotate(clapperSwing);
+            ctx.beginPath();
+            ctx.moveTo(-3, -10);
+            ctx.lineTo(-2, 15);
+            ctx.lineTo(2, 15);
+            ctx.lineTo(3, -10);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(140,130,120,0.2)';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(0, 17, 3, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(160,150,140,0.25)';
+            ctx.fill();
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+            var bg = ctx.createLinearGradient(0, 0, 0, h);
+            bg.addColorStop(0, '#0a0a18');
+            bg.addColorStop(1, '#0a0a10');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = 'rgba(30,25,20,0.3)';
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(w * 0.3, 0);
+            ctx.lineTo(w * 0.5, h * 0.08);
+            ctx.lineTo(w * 0.7, 0);
+            ctx.lineTo(w, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            if (swinging) {
+                swingVelocity *= 0.98;
+                swingAngle += swingVelocity;
+                swingVelocity -= swingAngle * 0.01;
+                if (Math.abs(swingAngle) < 0.001 && Math.abs(swingVelocity) < 0.001) {
+                    swinging = false;
+                    swingAngle = 0;
+                    swingVelocity = 0;
+                }
+            }
+
+            drawChime(w / 2, h * 0.25, t);
+
+            requestAnimationFrame(draw);
+        }
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

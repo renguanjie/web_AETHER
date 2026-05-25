@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>雪夜 · 守夜</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        .stone { position: fixed; bottom: 25vh; left: 50%; transform: translateX(-50%); text-align: center; }
+        .stone .body { width: 60px; height: 90px; background: linear-gradient(135deg, #2a2a2a, #1a1a1a); border-radius: 3px 3px 0 0; margin: 0 auto; position: relative; }
+        .stone .base { width: 80px; height: 8px; background: #222; border-radius: 2px; margin: 0 auto; }
+        .stone .snow-cap { position: absolute; top: 0; left: -3px; right: -3px; height: 10px; background: rgba(200,200,210,0.15); border-radius: 50%; transition: height 60s linear; }
+        .text { position: fixed; bottom: 10vh; left: 0; right: 0; text-align: center; font-family: 'STSong', 'SimSun', serif; font-size: 12px; color: rgba(200,195,185,0.15); letter-spacing: 4px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="stone"><div class="body"><div class="snow-cap" id="snow-cap"></div></div><div class="base"></div></div>
+    <div class="text">无言，无别，无悲</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+        var flakes = [];
+        for (var i = 0; i < 200; i++) flakes.push({ x: Math.random()*window.innerWidth, y: Math.random()*window.innerHeight, r: 0.5+Math.random()*1.5, speed: 0.2+Math.random()*0.5, drift: (Math.random()-0.5)*0.3 });
+        function draw() {
+            var w = window.innerWidth, h = window.innerHeight; ctx.clearRect(0, 0, w, h);
+            for (var i = 0; i < flakes.length; i++) { var f = flakes[i]; f.y += f.speed; f.x += f.drift+Math.sin(Date.now()*0.0005+i)*0.1; if(f.y>h){f.y=-5;f.x=Math.random()*w;} if(f.x>w)f.x=0; if(f.x<0)f.x=w; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI*2); ctx.fillStyle = 'rgba(200,200,210,' + (0.2+f.r*0.15) + ')'; ctx.fill(); }
+            requestAnimationFrame(draw);
+        }
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ping · 超时</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; font-family: 'Courier New', 'STSong', monospace; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        .hint { position: fixed; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(200,195,185,0.1); letter-spacing: 3px; font-family: 'STSong', 'SimSun', serif; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="hint">终端会自动输出……一直等待回应</div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+
+        var lines = [];
+        var maxLines = 20;
+        var seq = 0;
+        var scrollY = 0;
+        var targetScroll = 0;
+        var fontFamily = '13px "Courier New", "SimSun", monospace';
+        var lineHeight = 22;
+        var padX = 30, padY = 40;
+
+        function addLine(text, color) {
+            lines.push({ text: text, color: color || 'rgba(200,195,185,0.5)' });
+            if (lines.length > maxLines) lines.shift();
+            targetScroll = Math.max(0, lines.length - maxLines + 2) * lineHeight;
+        }
+
+        addLine('$ ping -t 192.168.1.100', 'rgba(100,200,100,0.6)');
+
+        function generatePingLine() {
+            seq++;
+            var timeout = Math.random() > 0.3;
+            if (timeout) {
+                addLine('Request timeout for icmp_seq ' + seq);
+            } else {
+                var time = (50 + Math.random() * 200).toFixed(1);
+                addLine('64 bytes from 192.168.1.100: icmp_seq=' + seq + ' ttl=64 time=' + time + ' ms');
+            }
+        }
+
+        setInterval(generatePingLine, 2500);
+
+        function draw(t) {
+            var w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = 'rgba(0,0,0,0.05)';
+            for (var i = 0; i < h; i += 3) {
+                ctx.fillRect(0, i, w, 1);
+            }
+
+            scrollY += (targetScroll - scrollY) * 0.05;
+
+            ctx.font = fontFamily;
+            var startY = padY + h * 0.1;
+            var visibleStart = Math.max(0, lines.length - maxLines);
+
+            for (var i = visibleStart; i < lines.length; i++) {
+                var line = lines[i];
+                var y = startY + (i - visibleStart) * lineHeight;
+                if (y > h - 40) break;
+
+                if (i === lines.length - 1) {
+                    var blink = Math.sin(t * 0.003) > 0 ? '▊' : ' ';
+                    ctx.fillStyle = line.color;
+                    ctx.fillText(line.text + blink, padX, y);
+                } else {
+                    ctx.fillStyle = line.color;
+                    ctx.fillText(line.text, padX, y);
+                }
+            }
+
+            var lost = lines.filter(function(l) { return l.text.indexOf('timeout') !== -1; }).length;
+            var total = lines.filter(function(l) { return l.text.indexOf('icmp_seq') !== -1 || l.text.indexOf('timeout') !== -1; }).length;
+            if (total > 0) {
+                var pct = ((lost / total) * 100).toFixed(0);
+                ctx.fillStyle = 'rgba(200,195,185,0.15)';
+                ctx.fillText('--- ' + lost + '/' + total + ' packets lost (' + pct + '%) --- still waiting...', padX, h - 30);
+            }
+
+            requestAnimationFrame(draw);
+        }
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

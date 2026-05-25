@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>烛光 · 守望</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .scene { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .candle-body { position: relative; width: 18px; height: 140px; background: linear-gradient(90deg, #d4d0c8, #e8e4dc 40%, #f0ece4 60%, #d4d0c8); border-radius: 2px; margin-top: 20px; box-shadow: inset 0 0 4px rgba(0,0,0,0.1); }
+        .candle-body::before { content: ''; position: absolute; top: -4px; left: -2px; right: -2px; height: 8px; background: radial-gradient(ellipse, #f0ece4, #d4d0c8); border-radius: 50%; }
+        .wick { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); width: 2px; height: 14px; background: linear-gradient(to top, #333, #1a1a1a); border-radius: 1px; }
+        .wick::after { content: ''; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: #ff6600; border-radius: 50%; opacity: 0.6; }
+        .flame-container { position: absolute; top: -85px; left: 50%; transform: translateX(-50%); transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .flame { position: relative; width: 14px; height: 36px; background: radial-gradient(ellipse at 50% 80%, #fff 0%, #ffeb3b 20%, #ff9800 45%, #ff5722 65%, transparent 100%); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; animation: flicker 3s ease-in-out infinite; filter: blur(0.5px); }
+        .flame::before { content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); width: 8px; height: 16px; background: radial-gradient(ellipse, #fff, rgba(255,235,59,0.8)); border-radius: 50%; }
+        .flame::after { content: ''; position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); width: 6px; height: 8px; background: rgba(33,150,243,0.4); border-radius: 50%; }
+        .glow { position: absolute; top: -50px; left: 50%; transform: translateX(-50%); width: 120px; height: 120px; background: radial-gradient(circle, rgba(255,152,0,0.15), rgba(255,87,34,0.05) 40%, transparent 70%); border-radius: 50%; animation: breathe 4s ease-in-out infinite; pointer-events: none; }
+        .glow-large { position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,152,0,0.06), transparent 60%); border-radius: 50%; animation: breathe 4s ease-in-out infinite; pointer-events: none; }
+        @keyframes flicker { 0%,100%{transform:scaleY(1) scaleX(1) rotate(0deg);} 15%{transform:scaleY(1.05) scaleX(0.95) rotate(-1deg);} 30%{transform:scaleY(0.95) scaleX(1.02) rotate(0.5deg);} 45%{transform:scaleY(1.02) scaleX(0.98) rotate(-0.5deg);} 60%{transform:scaleY(0.97) scaleX(1.01) rotate(1deg);} 75%{transform:scaleY(1.03) scaleX(0.97) rotate(-0.8deg);} }
+        @keyframes breathe { 0%,100%{opacity:0.6;transform:translateX(-50%) scale(1);} 50%{opacity:1;transform:translateX(-50%) scale(1.08);} }
+        .flame-container.tilted { transform: translateX(-50%) rotate(12deg) translateX(-8px); }
+        .flame-container.tilted .flame { animation-duration: 0.5s; filter: blur(1px); }
+        .melt { position: absolute; width: 4px; height: 12px; background: #e8e4dc; border-radius: 0 0 50% 50%; opacity: 0.7; }
+        .melt-1 { top: 20px; right: -3px; height: 16px; }
+        .melt-2 { top: 50px; left: -2px; height: 10px; }
+        .melt-3 { top: 80px; right: -2px; height: 14px; }
+        .text { position: absolute; bottom: 15vh; font-family: 'STSong', 'SimSun', serif; font-size: clamp(14px, 3vw, 18px); color: rgba(200,195,185,0); letter-spacing: 6px; transition: color 4s cubic-bezier(0.25, 0.46, 0.45, 0.94); text-align: center; user-select: none; }
+        .text.visible { color: rgba(200,195,185,0.7); }
+        .hint { position: absolute; bottom: 8vh; font-family: -apple-system, 'PingFang SC', sans-serif; font-size: 11px; color: rgba(200,195,185,0.2); letter-spacing: 3px; transition: opacity 3s ease; }
+    </style>
+</head>
+<body>
+    <div class="scene">
+        <div class="candle-body">
+            <div class="wick"></div>
+            <div class="melt melt-1"></div>
+            <div class="melt melt-2"></div>
+            <div class="melt melt-3"></div>
+            <div class="flame-container" id="flame-container">
+                <div class="glow-large"></div>
+                <div class="glow"></div>
+                <div class="flame" id="flame"></div>
+            </div>
+        </div>
+        <div class="text" id="text">风吹不灭思念</div>
+        <div class="hint" id="hint">长按屏幕 · 或对着麦克风吹气</div>
+    </div>
+    <script>
+        var flameEl = document.getElementById('flame-container'), textEl = document.getElementById('text'), hintEl = document.getElementById('hint');
+        setTimeout(function() { textEl.classList.add('visible'); }, 5000);
+        setTimeout(function() { hintEl.style.opacity = '0'; }, 12000);
+        function tiltOn() { flameEl.classList.add('tilted'); }
+        function tiltOff() { flameEl.classList.remove('tilted'); }
+        document.addEventListener('mousedown', tiltOn);
+        document.addEventListener('mouseup', tiltOff);
+        document.addEventListener('touchstart', tiltOn, { passive: true });
+        document.addEventListener('touchend', tiltOff);
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+                var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                var analyser = audioCtx.createAnalyser();
+                var source = audioCtx.createMediaStreamSource(stream);
+                analyser.fftSize = 256; source.connect(analyser);
+                var dataArr = new Uint8Array(analyser.frequencyBinCount);
+                function check() {
+                    analyser.getByteFrequencyData(dataArr);
+                    var sum = 0; for (var i = 0; i < dataArr.length; i++) sum += dataArr[i];
+                    if (sum / dataArr.length > 60) tiltOn(); else tiltOff();
+                    requestAnimationFrame(check);
+                }
+                check();
+            }).catch(function() {});
+        }
+    </script>
+</body>
+</html>

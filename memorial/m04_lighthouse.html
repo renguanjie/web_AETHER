@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>灯塔 · 指引</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; font-family: -apple-system, 'PingFang SC', sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        .message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; opacity: 0; transition: opacity 1.5s ease; pointer-events: none; }
+        .message.visible { opacity: 1; }
+        .message p { font-family: 'STSong', 'SimSun', serif; font-size: clamp(16px, 3.5vw, 22px); color: rgba(255,250,240,0.9); letter-spacing: 6px; }
+        .message .sub { font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 4px; margin-top: 16px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="message" id="message"><p>你是我穿越迷雾的灯塔</p><div class="sub">A LIGHT THROUGH THE FOG</div></div>
+    <script>
+        var canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        function resize() { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        resize(); window.addEventListener('resize', resize);
+        var fog = [];
+        for (var i = 0; i < 80; i++) fog.push({ x: Math.random()*800, y: Math.random()*600, r: 40+Math.random()*80, vx: (Math.random()-0.5)*0.15, op: 0.02+Math.random()*0.04 });
+        var ba = 0;
+        function draw(time) {
+            var w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+            var sg = ctx.createLinearGradient(0, h*0.65, 0, h); sg.addColorStop(0, '#1a1a2e'); sg.addColorStop(1, '#0a0a15');
+            ctx.fillStyle = sg; ctx.fillRect(0, h*0.65, w, h*0.35);
+            var lx = w*0.8, ly = h*0.65;
+            ctx.fillStyle = '#2a2a35'; ctx.fillRect(lx-8, ly-60, 16, 60);
+            ctx.fillStyle = '#333340'; ctx.beginPath(); ctx.arc(lx, ly-60, 10, Math.PI, 0); ctx.fill();
+            ctx.fillStyle = 'rgba(255,250,230,0.8)'; ctx.beginPath(); ctx.arc(lx, ly-60, 3, 0, Math.PI*2); ctx.fill();
+            ba += 0.0004; var angle = Math.sin(ba)*1.2;
+            ctx.save(); ctx.translate(lx, ly-60); ctx.rotate(angle);
+            var bg = ctx.createLinearGradient(0,0,w*0.9,0); bg.addColorStop(0,'rgba(255,250,230,0.12)'); bg.addColorStop(0.3,'rgba(255,250,230,0.06)'); bg.addColorStop(1,'rgba(255,250,230,0)');
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(w*0.9,-40); ctx.lineTo(w*0.9,40); ctx.closePath(); ctx.fillStyle = bg; ctx.fill(); ctx.restore();
+            for (var i = 0; i < fog.length; i++) { var f = fog[i]; f.x += f.vx; if (f.x>w+f.r) f.x=-f.r; if (f.x<-f.r) f.x=w+f.r; ctx.beginPath(); ctx.arc(f.x, f.y*h/600, f.r, 0, Math.PI*2); ctx.fillStyle = 'rgba(180,180,190,' + f.op + ')'; ctx.fill(); }
+            var msgEl = document.getElementById('message');
+            if (Math.cos(angle) < -0.3) msgEl.classList.add('visible'); else msgEl.classList.remove('visible');
+            requestAnimationFrame(draw);
+        }
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>
