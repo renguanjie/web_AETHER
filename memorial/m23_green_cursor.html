@@ -6,63 +6,324 @@
     <title>光标 · 未发送</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'STSong', 'SimSun', serif; }
-        .chat { width: 85%; max-width: 360px; }
-        .messages { max-height: 50vh; overflow-y: auto; padding: 10px 0; }
-        .msg { margin-bottom: 12px; animation: fadeIn 3s ease; }
-        .msg.sent { text-align: right; }
-        .msg .bubble { display: inline-block; padding: 8px 14px; border-radius: 16px; font-size: 13px; line-height: 1.6; letter-spacing: 1px; }
-        .msg.sent .bubble { background: rgba(40,80,40,0.2); color: rgba(200,195,185,0.35); }
-        .msg.received .bubble { background: rgba(40,40,40,0.3); color: rgba(200,195,185,0.25); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .input-area { position: relative; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; margin-top: 15px; }
-        .input-area input { width: 100%; background: transparent; border: none; outline: none; color: rgba(200,195,185,0.3); font-size: 13px; font-family: 'STSong', 'SimSun', serif; letter-spacing: 1px; padding-right: 40px; }
-        .input-area .cursor { display: inline-block; width: 2px; height: 16px; background: rgba(100,200,100,0.5); position: absolute; right: 5px; top: 50%; transform: translateY(-50%); animation: blink 1.2s step-end infinite; }
-        @keyframes blink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
-        .input-area .send { position: absolute; right: 25px; top: 50%; transform: translateY(-50%); color: rgba(100,200,100,0.15); font-size: 16px; pointer-events: none; }
-        .status { text-align: center; font-size: 10px; color: rgba(200,195,185,0.1); margin-top: 20px; letter-spacing: 2px; opacity: 0; transition: opacity 4s ease; }
-        .status.visible { opacity: 1; }
+        html, body {
+            width: 100%; height: 100%;
+            background: #0d0d12;
+            font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+            color: #c8c8cc;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            max-width: 480px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 20px 20px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2a2a30, #1a1a20);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            opacity: 0.6;
+        }
+        .chat-name { font-size: 15px; font-weight: 500; }
+        .chat-status {
+            font-size: 11px;
+            color: rgba(200, 195, 185, 0.25);
+            letter-spacing: 1px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .chat-messages::-webkit-scrollbar { width: 0; }
+
+        .msg {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            opacity: 0;
+            animation: msgIn 1s ease forwards;
+        }
+        .msg.received {
+            align-self: flex-start;
+            background: rgba(255,255,255,0.04);
+            color: rgba(220, 215, 210, 0.6);
+            border-bottom-left-radius: 4px;
+        }
+        .msg.sent {
+            align-self: flex-end;
+            background: rgba(100, 100, 120, 0.12);
+            color: rgba(200, 200, 210, 0.5);
+            border-bottom-right-radius: 4px;
+        }
+        .msg-time {
+            font-size: 10px;
+            color: rgba(200, 195, 185, 0.15);
+            margin-top: 4px;
+        }
+        .msg.received .msg-time { text-align: left; }
+        .msg.sent .msg-time { text-align: right; }
+
+        @keyframes msgIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .offline-notice {
+            text-align: center;
+            font-size: 11px;
+            color: rgba(200, 195, 185, 0.12);
+            padding: 10px;
+            letter-spacing: 2px;
+        }
+
+        .chat-input-area {
+            padding: 12px 16px;
+            border-top: 1px solid rgba(255,255,255,0.04);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-shrink: 0;
+            background: rgba(13, 13, 18, 0.95);
+            position: relative;
+        }
+        .chat-input {
+            flex: 1;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 20px;
+            padding: 10px 16px;
+            font-size: 14px;
+            color: rgba(220, 215, 210, 0.7);
+            font-family: inherit;
+            outline: none;
+            caret-color: rgba(100, 200, 100, 0.6);
+        }
+        .chat-input::placeholder {
+            color: rgba(200, 195, 185, 0.15);
+        }
+        .send-btn {
+            padding: 10px 18px;
+            border-radius: 20px;
+            border: none;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: not-allowed;
+            opacity: 0.15;
+            color: rgba(200, 195, 185, 0.3);
+            background: rgba(255,255,255,0.02);
+            letter-spacing: 2px;
+        }
+
+        .wind-message {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(200, 195, 185, 0.12);
+            letter-spacing: 3px;
+            font-family: 'STSong', 'SimSun', serif;
+            opacity: 0;
+            transition: opacity 3s ease;
+            padding: 8px 16px;
+            flex-shrink: 0;
+        }
+        .wind-message.visible { opacity: 1; }
+
+        #particle-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
-    <div class="chat">
-        <div class="messages" id="messages"></div>
-        <div class="input-area">
-            <input type="text" id="input" placeholder="输入你想说的话..." readonly>
-            <span class="send">↑</span>
-            <span class="cursor"></span>
+    <canvas id="particle-canvas"></canvas>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="avatar">🌙</div>
+            <div>
+                <div class="chat-name">那个再也收不到消息的人</div>
+                <div class="chat-status">离线</div>
+            </div>
         </div>
-        <div class="status" id="status">对方已离线 327 天</div>
+
+        <div class="chat-messages" id="messages">
+            <div class="offline-notice">对方已离线 327 天</div>
+            <div class="msg received" style="animation-delay: 0.5s">
+                在吗？
+                <div class="msg-time">2025.03.15 22:31</div>
+            </div>
+            <div class="msg received" style="animation-delay: 1.5s">
+                最近还好吗
+                <div class="msg-time">2025.03.15 22:35</div>
+            </div>
+            <div class="msg sent" style="animation-delay: 2.5s">
+                嗯，还好
+                <div class="msg-time">2025.03.15 22:38</div>
+            </div>
+            <div class="msg received" style="animation-delay: 3.5s">
+                那就好
+                <div class="msg-time">2025.03.15 22:40</div>
+            </div>
+        </div>
+
+        <div class="wind-message" id="wind">风已经替你把话带到了</div>
+
+        <div class="chat-input-area">
+            <input class="chat-input" id="input" type="text" placeholder="说些什么吧..." autocomplete="off">
+            <button class="send-btn" disabled>发送</button>
+        </div>
     </div>
-    <script>
-        var messages = [
-            { text: '在吗？', type: 'sent' },
-            { text: '今天下雨了', type: 'sent' },
-            { text: '你种的那盆花开了', type: 'sent' },
-            { text: '我拍了照片给你看', type: 'sent' },
-            { text: '...', type: 'received' },
-            { text: '你那边也下雨了吗？', type: 'sent' },
-            { text: '花很美，像你喜欢的样子', type: 'sent' },
-            { text: '...', type: 'received' },
-            { text: '我想你了', type: 'sent' },
-        ];
-        var idx = 0;
-        function addMessage() {
-            if (idx >= messages.length) {
-                document.getElementById('status').classList.add('visible');
-                document.getElementById('input').focus();
-                return;
-            }
-            var msg = messages[idx];
-            var div = document.createElement('div');
-            div.className = 'msg ' + msg.type;
-            div.innerHTML = '<div class="bubble">' + msg.text + '</div>';
-            document.getElementById('messages').appendChild(div);
-            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
-            idx++;
-            setTimeout(addMessage, 2000 + Math.random() * 1500);
+
+<script>
+var input = document.getElementById('input');
+var messagesEl = document.getElementById('messages');
+var windMsg = document.getElementById('wind');
+var particleCanvas = document.getElementById('particle-canvas');
+var pCtx = particleCanvas.getContext('2d');
+var dpr = window.devicePixelRatio || 1;
+
+function resizeParticle() {
+    particleCanvas.width = window.innerWidth * dpr;
+    particleCanvas.height = window.innerHeight * dpr;
+    pCtx.scale(dpr, dpr);
+}
+resizeParticle();
+window.addEventListener('resize', resizeParticle);
+
+/* ===== Particle system ===== */
+var particles = [];
+
+function spawnParticles(text, inputRect) {
+    var chars = text.split('');
+    for (var i = 0; i < chars.length; i++) {
+        var charX = inputRect.left + 16 + i * 9;
+        var charY = inputRect.top + inputRect.height / 2;
+
+        var count = 3 + Math.floor(Math.random() * 3);
+        for (var j = 0; j < count; j++) {
+            particles.push({
+                x: charX + Math.random() * 6,
+                y: charY + (Math.random() - 0.5) * 4,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: -0.2 - Math.random() * 0.6,
+                life: 1,
+                decay: 0.002 + Math.random() * 0.004,
+                size: 0.8 + Math.random() * 1.2,
+                char: chars[i],
+                isChar: j === 0 && Math.random() < 0.25
+            });
         }
-        setTimeout(addMessage, 1000);
-    </script>
+    }
+}
+
+function updateParticles() {
+    for (var i = particles.length - 1; i >= 0; i--) {
+        var p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy -= 0.001;
+        p.vx += (Math.random() - 0.5) * 0.015;
+        p.life -= p.decay;
+        if (p.life <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+}
+
+function drawParticles() {
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    pCtx.clearRect(0, 0, w, h);
+
+    for (var i = 0; i < particles.length; i++) {
+        var p = particles[i];
+        if (p.isChar) {
+            pCtx.font = '10px STSong, SimSun, serif';
+            pCtx.fillStyle = 'rgba(200, 195, 185, ' + (p.life * 0.35) + ')';
+            pCtx.fillText(p.char, p.x, p.y);
+        } else {
+            pCtx.beginPath();
+            pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            pCtx.fillStyle = 'rgba(180, 175, 165, ' + (p.life * 0.2) + ')';
+            pCtx.fill();
+        }
+    }
+}
+
+/* ===== Typing / Dissolve logic ===== */
+var lastTypeTime = 0;
+var dissolving = false;
+var dissolveTimeout = null;
+
+function scheduleDissolve() {
+    lastTypeTime = Date.now();
+    dissolving = false;
+    windMsg.classList.remove('visible');
+
+    if (dissolveTimeout) clearTimeout(dissolveTimeout);
+    if (input.value.length > 0) {
+        dissolveTimeout = setTimeout(performDissolve, 4000);
+    }
+}
+
+function performDissolve() {
+    var text = input.value;
+    if (text.length === 0 || dissolving) return;
+
+    dissolving = true;
+    var rect = input.getBoundingClientRect();
+    spawnParticles(text, rect);
+
+    /* Erase characters one by one */
+    var eraseInterval = setInterval(function() {
+        input.value = input.value.substring(0, input.value.length - 1);
+        if (input.value.length === 0) {
+            clearInterval(eraseInterval);
+            dissolving = false;
+
+            setTimeout(function() {
+                windMsg.classList.add('visible');
+            }, 800);
+        }
+    }, 80);
+}
+
+input.addEventListener('keydown', scheduleDissolve);
+input.addEventListener('input', scheduleDissolve);
+
+/* ===== Animation loop ===== */
+function animate() {
+    updateParticles();
+    drawParticles();
+    requestAnimationFrame(animate);
+}
+animate();
+
+/* Focus input */
+setTimeout(function() { input.focus(); }, 1500);
+</script>
 </body>
 </html>

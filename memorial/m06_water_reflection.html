@@ -3,42 +3,341 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>倒影 · 镜像</title>
+    <title>水面倒影 · 触不可及</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; font-family: -apple-system, 'PingFang SC', sans-serif; }
-        .top-half { position: absolute; top: 0; left: 0; right: 0; height: 50%; display: flex; justify-content: center; align-items: center; background: linear-gradient(180deg, #2a2a2a, #1a1a1a); overflow: hidden; }
-        .portrait { width: 120px; height: 160px; background: linear-gradient(135deg, #3a3a3a, #2a2a2a); border-radius: 4px; display: flex; justify-content: center; align-items: center; color: rgba(200,195,185,0.3); font-size: 48px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
-        .divider { position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(100,120,140,0.2); z-index: 5; }
-        .bottom-half { position: absolute; top: 50%; left: 0; right: 0; height: 50%; background: linear-gradient(180deg, #0a1520, #0a0a15); overflow: hidden; }
-        canvas { display: block; width: 100%; height: 100%; }
-        .text { position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; font-family: 'STSong', 'SimSun', serif; font-size: 12px; color: rgba(200,195,185,0.2); letter-spacing: 4px; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+        canvas { display: block; width: 100vw; height: 100vh; cursor: pointer; }
+        .text {
+            position: fixed;
+            bottom: 15vh;
+            left: 0; right: 0;
+            text-align: center;
+            font-size: clamp(12px, 2vw, 15px);
+            color: rgba(220, 215, 210, 0.6);
+            letter-spacing: 4px;
+            font-family: 'STSong', 'SimSun', serif;
+            opacity: 0;
+            transition: opacity 3s ease-in-out;
+            pointer-events: none;
+        }
+        .text.visible { opacity: 1; }
+        .hint {
+            position: fixed;
+            bottom: 7vh;
+            left: 0; right: 0;
+            text-align: center;
+            font-size: 11px;
+            color: rgba(200, 195, 185, 0.15);
+            letter-spacing: 3px;
+            font-family: 'STSong', 'SimSun', serif;
+            transition: opacity 2s ease;
+        }
     </style>
 </head>
 <body>
-    <div class="top-half"><div class="portrait">&#10084;</div></div>
-    <div class="divider"></div>
-    <div class="bottom-half"><canvas id="water"></canvas></div>
-    <div class="text">生死两界，触不可及</div>
-    <script>
-        var canvas = document.getElementById('water'), ctx = canvas.getContext('2d');
-        var dpr = window.devicePixelRatio || 1;
-        function resize() { canvas.width = canvas.offsetWidth * dpr; canvas.height = canvas.offsetHeight * dpr; ctx.scale(dpr, dpr); }
-        resize(); window.addEventListener('resize', resize);
-        var W = function() { return canvas.offsetWidth; }, H = function() { return canvas.offsetHeight; };
-        var mx = -1000, my = -1000;
-        document.querySelector('.bottom-half').addEventListener('mousemove', function(e) { var r = e.currentTarget.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; });
-        document.querySelector('.bottom-half').addEventListener('mouseleave', function() { mx = -1000; my = -1000; });
-        var t = 0;
-        function draw() {
-            var w = W(), h = H(); ctx.clearRect(0, 0, w, h); t += 0.01;
-            var dist = Math.sqrt((mx-w/2)*(mx-w/2)+(my-h/2)*(my-h/2));
-            var d = dist < 100 ? 8 : (dist < 200 ? 3 : 0);
-            for (var y = 0; y < h; y += 2) { var off = Math.sin(y*0.05+t*2)*(1+d)+Math.sin(y*0.03+t*1.5)*d; var a = 0.15-y/h*0.1; ctx.fillStyle = 'rgba(60,60,60,' + Math.max(0,a) + ')'; ctx.fillRect(w/2-60+off, y+10, 120, 2); }
-            for (var i = 0; i < 5; i++) { var ry = 20+i*30+Math.sin(t+i)*5; ctx.strokeStyle = 'rgba(100,120,140,0.04)'; ctx.lineWidth = 0.5; ctx.beginPath(); for (var x = 0; x < w; x += 4) { var yy = ry+Math.sin(x*0.02+t*1.5+i)*3; if(x===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy); } ctx.stroke(); }
-            requestAnimationFrame(draw);
+    <canvas id="canvas"></canvas>
+    <div class="text" id="text">生死如水面，触不可及，只能凝望</div>
+    <div class="hint" id="hint">轻触水面，倒影会碎</div>
+
+<script>
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var dpr = window.devicePixelRatio || 1;
+var W, H, waterY;
+
+function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
+    waterY = H * 0.42;
+    allocBuffers();
+}
+resize();
+window.addEventListener('resize', resize);
+
+/* ===== Ripple buffer (2D wave equation) ===== */
+var buf1, buf2;
+function allocBuffers() {
+    var sz = W * H;
+    buf1 = new Float32Array(sz);
+    buf2 = new Float32Array(sz);
+}
+
+function dropRipple(cx, cy, radius, strength) {
+    var r = Math.round(radius);
+    var x0 = Math.max(1, Math.round(cx) - r);
+    var x1 = Math.min(W - 2, Math.round(cx) + r);
+    var y0 = Math.max(1, Math.round(cy) - r);
+    var y1 = Math.min(H - 2, Math.round(cy) + r);
+    for (var y = y0; y <= y1; y++) {
+        var dy2 = (y - cy) * (y - cy);
+        for (var x = x0; x <= x1; x++) {
+            var dist = Math.sqrt((x - cx) * (x - cx) + dy2);
+            if (dist < r) {
+                buf1[y * W + x] += strength * (1 - dist / r) * (1 - dist / r);
+            }
         }
-        requestAnimationFrame(draw);
-    </script>
+    }
+}
+
+function propagateRipples() {
+    for (var y = 1; y < H - 1; y++) {
+        var row = y * W;
+        for (var x = 1; x < W - 1; x++) {
+            var idx = row + x;
+            buf2[idx] = (
+                buf1[idx - 1] + buf1[idx + 1] +
+                buf1[idx - W] + buf1[idx + W]
+            ) * 0.5 - buf2[idx];
+            buf2[idx] *= 0.965;
+        }
+    }
+    var tmp = buf1; buf1 = buf2; buf2 = tmp;
+}
+
+function applyRipplesToWater(imageData) {
+    var data = imageData.data;
+    for (var y = 1; y < H - 1; y++) {
+        var row = y * W;
+        for (var x = 1; x < W - 1; x++) {
+            var idx = row + x;
+            var val = buf1[idx];
+            if (Math.abs(val) < 0.15) continue;
+
+            var refX = x + Math.round(buf1[idx + 1] - buf1[idx - 1]);
+            var refY = y + Math.round(buf1[idx + W] - buf1[idx - W]);
+            refX = Math.max(0, Math.min(W - 1, refX));
+            refY = Math.max(0, Math.min(H - 1, refY));
+            var srcIdx = (refY * W + refX) * 4;
+            var dstIdx = idx * 4;
+
+            var bright = val * 1.5;
+            data[dstIdx]     = Math.min(255, Math.max(0, data[srcIdx]     + bright));
+            data[dstIdx + 1] = Math.min(255, Math.max(0, data[srcIdx + 1] + bright));
+            data[dstIdx + 2] = Math.min(255, Math.max(0, data[srcIdx + 2] + bright * 1.2));
+        }
+    }
+}
+
+/* ===== Auto ripples - breathing effect ===== */
+function autoBreath() {
+    if (Math.random() < 0.02) {
+        dropRipple(
+            W * 0.25 + Math.random() * W * 0.5,
+            waterY + 15 + Math.random() * (H - waterY - 30),
+            3, 0.25
+        );
+    }
+}
+
+/* ===== Photo ===== */
+var photoImg = null;
+var photoLoaded = false;
+var pX, pY, pW, pH;
+
+function loadImage() {
+    photoImg = new Image();
+    photoImg.crossOrigin = 'anonymous';
+    photoImg.onload = function() {
+        photoLoaded = true;
+        var maxW = W * 0.35;
+        var maxH = waterY * 0.8;
+        var aspect = photoImg.width / photoImg.height;
+        pH = maxH;
+        pW = pH * aspect;
+        if (pW > maxW) {
+            pW = maxW;
+            pH = pW / aspect;
+        }
+        pX = (W - pW) / 2;
+        pY = (waterY - pH) * 0.5;
+    };
+    photoImg.onerror = function() { photoLoaded = false; };
+    photoImg.src = 'https://picsum.photos/seed/still-dark-portrait/600/500';
+}
+loadImage();
+
+function drawPhoto() {
+    if (!photoLoaded || !photoImg) {
+        /* Fallback silhouette */
+        ctx.save();
+        var cx = W / 2, cy = waterY * 0.48;
+        var r = Math.min(W, H) * 0.12;
+        ctx.fillStyle = '#151515';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + r * 1.1, r * 0.65, r * 0.75, 0, 0, Math.PI * 2);
+        ctx.fill();
+        var vig = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r * 2.5);
+        vig.addColorStop(0, 'rgba(0,0,0,0)');
+        vig.addColorStop(1, 'rgba(0,0,0,0.5)');
+        ctx.fillStyle = vig;
+        ctx.fillRect(0, 0, W, waterY);
+        ctx.restore();
+        return;
+    }
+
+    ctx.save();
+    ctx.drawImage(photoImg, pX, pY, pW, pH);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.fillRect(pX, pY, pW, pH);
+    var vig = ctx.createRadialGradient(
+        W / 2, pY + pH / 2, pW * 0.15,
+        W / 2, pY + pH / 2, pW * 0.6
+    );
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(pX, pY, pW, pH);
+    ctx.restore();
+}
+
+function drawReflection() {
+    if (!photoLoaded || !photoImg) return;
+
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(pX, waterY, pW, pH);
+    ctx.clip();
+    ctx.translate(0, waterY * 2);
+    ctx.scale(1, -1);
+    ctx.drawImage(photoImg, pX, pY, pW, pH);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+
+    var fade = ctx.createLinearGradient(0, waterY, 0, waterY + pH);
+    fade.addColorStop(0, 'rgba(4,6,12,0)');
+    fade.addColorStop(0.6, 'rgba(4,6,12,0.4)');
+    fade.addColorStop(1, 'rgba(4,6,12,0.9)');
+    ctx.fillStyle = fade;
+    ctx.fillRect(pX, waterY, pW, pH);
+    ctx.restore();
+}
+
+function drawWaterBase() {
+    var grad = ctx.createLinearGradient(0, waterY, 0, H);
+    grad.addColorStop(0, '#060a10');
+    grad.addColorStop(0.3, '#04080e');
+    grad.addColorStop(1, '#020308');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, waterY, W, H - waterY);
+}
+
+function drawWaterLines(t) {
+    ctx.strokeStyle = 'rgba(100, 120, 150, 0.015)';
+    ctx.lineWidth = 0.5;
+    var waterH = H - waterY;
+    for (var i = 0; i < 12; i++) {
+        var ly = waterY + 12 + i * (waterH / 12);
+        var wave = Math.sin(t * 0.0004 + i * 0.8) * 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, ly + wave);
+        for (var lx = 0; lx < W; lx += 8) {
+            var ly2 = ly + wave + Math.sin(lx * 0.008 + t * 0.0008 + i) * 0.8;
+            ctx.lineTo(lx, ly2);
+        }
+        ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(140, 150, 170, 0.04)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, waterY);
+    for (var bx = 0; bx < W; bx += 4) {
+        ctx.lineTo(bx, waterY + Math.sin(bx * 0.015 + t * 0.0006) * 1.2);
+    }
+    ctx.stroke();
+}
+
+function drawBackground() {
+    var grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#050508');
+    grad.addColorStop(0.35, '#030306');
+    grad.addColorStop(0.42, '#040608');
+    grad.addColorStop(1, '#020204');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+}
+
+/* ===== Text ===== */
+var textShown = false;
+function showText() {
+    if (!textShown) {
+        textShown = true;
+        document.getElementById('text').classList.add('visible');
+        document.getElementById('hint').style.opacity = '0';
+    }
+}
+
+/* ===== Events ===== */
+canvas.addEventListener('mousemove', function(e) {
+    var mx = e.clientX, my = e.clientY;
+    if (my > waterY + 10) {
+        if (Math.random() < 0.25) {
+            dropRipple(mx + (Math.random() - 0.5) * 15, my + (Math.random() - 0.5) * 10, 3, 0.5);
+            showText();
+        }
+    }
+});
+
+canvas.addEventListener('click', function(e) {
+    if (e.clientY > waterY) {
+        dropRipple(e.clientX, e.clientY, 5, 1.5);
+        showText();
+    }
+});
+
+canvas.addEventListener('touchstart', function(e) {
+    var t = e.touches[0];
+    if (t.clientY > waterY) {
+        dropRipple(t.clientX, t.clientY, 5, 1.2);
+        showText();
+    }
+}, { passive: true });
+
+canvas.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    var t = e.touches[0];
+    if (t.clientY > waterY) {
+        if (Math.random() < 0.2) {
+            dropRipple(t.clientX, t.clientY, 3, 0.5);
+            showText();
+        }
+    }
+}, { passive: false });
+
+/* ===== Main loop ===== */
+function animate(time) {
+    autoBreath();
+    propagateRipples();
+
+    drawBackground();
+    drawPhoto();
+    drawWaterBase();
+    drawReflection();
+
+    var waterH = Math.ceil(H - waterY);
+    if (waterH > 0) {
+        var imgData = ctx.getImageData(0, Math.floor(waterY), W, waterH);
+        applyRipplesToWater(imgData);
+        ctx.putImageData(imgData, 0, Math.floor(waterY));
+    }
+
+    drawWaterLines(time);
+    requestAnimationFrame(animate);
+}
+
+setTimeout(function() {
+    dropRipple(W * 0.5, waterY + 20, 3, 0.2);
+}, 2500);
+
+requestAnimationFrame(animate);
+</script>
 </body>
 </html>

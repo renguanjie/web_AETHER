@@ -3,38 +3,351 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>风信子 · 绽放</title>
+    <title>风信子 · 时间倒流</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .flower-container { position: relative; width: 200px; height: 350px; }
-        .stem { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); width: 3px; height: 0; background: linear-gradient(to top, #4a5a3a, #5a6a4a); border-radius: 2px; transition: height 3s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-        .stem.grown { height: 180px; }
-        .petal-cluster { position: absolute; top: 0; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-        .petal-cluster.bloomed { opacity: 1; }
-        .petal { position: absolute; width: 8px; height: 20px; background: radial-gradient(ellipse, rgba(240,240,235,0.9), rgba(220,220,210,0.6)); border-radius: 50%; transform-origin: bottom center; }
-        .btn { margin-top: 40px; padding: 12px 30px; background: transparent; border: 1px solid rgba(200,195,185,0.15); border-radius: 4px; color: rgba(200,195,185,0.4); font-size: 12px; letter-spacing: 4px; cursor: pointer; font-family: inherit; user-select: none; transition: all 2s ease; -webkit-user-select: none; }
-        .btn:active { border-color: rgba(200,195,185,0.4); color: rgba(200,195,185,0.7); }
-        .text { margin-top: 20px; font-family: 'STSong', 'SimSun', serif; font-size: 12px; color: rgba(200,195,185,0.2); letter-spacing: 3px; opacity: 0; transition: opacity 3s ease; }
-        .text.visible { opacity: 1; }
+        html, body {
+            width: 100%; height: 100%;
+            background: #0a0a0c;
+            font-family: 'STSong', 'SimSun', serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .flower-stage {
+            position: relative;
+            width: 300px;
+            height: 420px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 40px;
+        }
+
+        .stem {
+            position: absolute;
+            bottom: 40px;
+            width: 3px;
+            height: 40px;
+            background: linear-gradient(to top, #2a3a2a, #3a5a3a);
+            border-radius: 2px;
+        }
+
+        .leaf {
+            position: absolute;
+            width: 50px;
+            height: 24px;
+            border-radius: 0 50% 50% 0;
+            background: linear-gradient(135deg, #2a4a2a, #3a6a3a);
+            opacity: 0;
+        }
+        .leaf-left {
+            bottom: 100px;
+            left: 50%;
+            margin-left: -50px;
+            border-radius: 50% 0 0 50%;
+            transform-origin: right center;
+            transform: rotate(-20deg);
+        }
+        .leaf-right {
+            bottom: 140px;
+            left: 50%;
+            transform-origin: left center;
+            transform: rotate(20deg);
+        }
+
+        .flower-head {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+        }
+
+        .petal {
+            position: absolute;
+            width: 20px;
+            height: 28px;
+            background: radial-gradient(ellipse at 50% 30%, #f5f2ed, #ddd8d0, #c8c4bc);
+            border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
+            left: 50%;
+            top: 50%;
+            margin-left: -10px;
+            margin-top: -28px;
+            transform-origin: center bottom;
+            opacity: 0.3;
+            transform: rotate(var(--rot, 0deg)) scale(0.4);
+            box-shadow: inset 0 -3px 6px rgba(0,0,0,0.04);
+        }
+        .petal:nth-child(1) { --rot: 0deg; }
+        .petal:nth-child(2) { --rot: 60deg; }
+        .petal:nth-child(3) { --rot: 120deg; }
+        .petal:nth-child(4) { --rot: 180deg; }
+        .petal:nth-child(5) { --rot: 240deg; }
+        .petal:nth-child(6) { --rot: 300deg; }
+
+        .petal-core {
+            position: absolute;
+            width: 10px; height: 10px;
+            background: radial-gradient(circle, #e0dcd4, #c0bcb4);
+            border-radius: 50%;
+            left: 50%; top: 50%;
+            margin-left: -5px; margin-top: -5px;
+            transform: scale(0.3);
+        }
+
+        .hold-btn {
+            position: fixed;
+            bottom: 80px;
+            padding: 12px 32px;
+            border: 1px solid rgba(200, 195, 185, 0.12);
+            border-radius: 24px;
+            background: transparent;
+            color: rgba(200, 195, 185, 0.25);
+            font-family: 'STSong', 'SimSun', serif;
+            font-size: 13px;
+            letter-spacing: 4px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            z-index: 10;
+        }
+        .hold-btn.pressing {
+            border-color: rgba(200, 195, 185, 0.25);
+            color: rgba(200, 195, 185, 0.5);
+            background: rgba(255,255,255,0.015);
+        }
+
+        .progress-ring {
+            position: fixed;
+            bottom: 135px;
+            width: 32px; height: 32px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .progress-ring.visible { opacity: 1; }
+        .progress-ring svg { transform: rotate(-90deg); }
+        .progress-ring circle { fill: none; stroke-width: 1.5; }
+        .progress-ring .track { stroke: rgba(200,195,185,0.05); }
+        .progress-ring .fill {
+            stroke: rgba(220,215,210,0.25);
+            stroke-dasharray: 85;
+            stroke-dashoffset: 85;
+        }
+
+        .message {
+            position: fixed;
+            bottom: 180px;
+            text-align: center;
+            left: 20px; right: 20px;
+            font-size: 14px;
+            color: rgba(210,205,200,0.45);
+            letter-spacing: 5px;
+            opacity: 0;
+            transition: opacity 4s ease;
+            pointer-events: none;
+        }
+        .message.visible { opacity: 1; }
+
+        .hint {
+            position: fixed;
+            bottom: 28px;
+            text-align: center;
+            left: 0; right: 0;
+            font-size: 11px;
+            color: rgba(200,195,185,0.08);
+            letter-spacing: 3px;
+            transition: opacity 1s ease;
+        }
+
+        .falling-petal {
+            position: fixed;
+            width: 10px; height: 14px;
+            background: radial-gradient(ellipse at 50% 30%, #e8e4dc, #ccc8c0);
+            border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
+            pointer-events: none;
+            z-index: 5;
+        }
     </style>
 </head>
 <body>
-    <div class="flower-container" id="container">
+
+    <div class="flower-stage" id="stage">
         <div class="stem" id="stem"></div>
-        <div class="petal-cluster" id="cluster"></div>
+        <div class="leaf leaf-left" id="leafL"></div>
+        <div class="leaf leaf-right" id="leafR"></div>
+        <div class="flower-head" id="head">
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal-core" id="core"></div>
+        </div>
     </div>
-    <button class="btn" id="btn">长按浇灌思念</button>
-    <div class="text" id="text">枯萎的花，也曾为你盛开</div>
-    <script>
-        var stem = document.getElementById('stem'), cluster = document.getElementById('cluster'), text = document.getElementById('text'), btn = document.getElementById('btn');
-        var pressing = false;
-        for (var i = 0; i < 12; i++) { var p = document.createElement('div'); p.className = 'petal'; var a = (i/12)*Math.PI*2, r = 15+Math.random()*10; p.style.left = Math.cos(a)*r+'px'; p.style.top = Math.sin(a)*r-20+'px'; p.style.transform = 'rotate('+(a*180/Math.PI)+'deg)'; cluster.appendChild(p); }
-        function on() { pressing = true; } function off() { pressing = false; }
-        btn.addEventListener('mousedown', on); btn.addEventListener('mouseup', off); btn.addEventListener('mouseleave', off);
-        btn.addEventListener('touchstart', on, { passive: true }); btn.addEventListener('touchend', off);
-        function check() { if (pressing) { stem.classList.add('grown'); setTimeout(function() { cluster.classList.add('bloomed'); }, 2000); setTimeout(function() { text.classList.add('visible'); }, 4000); } else { stem.classList.remove('grown'); cluster.classList.remove('bloomed'); text.classList.remove('visible'); } requestAnimationFrame(check); }
-        requestAnimationFrame(check);
-    </script>
+
+    <div class="progress-ring" id="progressRing">
+        <svg width="32" height="32" viewBox="0 0 32 32">
+            <circle class="track" cx="16" cy="16" r="13.5"/>
+            <circle class="fill" id="progressFill" cx="16" cy="16" r="13.5"/>
+        </svg>
+    </div>
+
+    <div class="message" id="message">你可以假装时间倒流，但终究要学会松手</div>
+
+    <button class="hold-btn" id="holdBtn">长按以挽留</button>
+    <div class="hint" id="hint">按住不放，让花重新开放</div>
+
+<script>
+var stem = document.getElementById('stem');
+var leafL = document.getElementById('leafL');
+var leafR = document.getElementById('leafR');
+var head = document.getElementById('head');
+var petals = document.querySelectorAll('.petal');
+var core = document.getElementById('core');
+var holdBtn = document.getElementById('holdBtn');
+var progressRing = document.getElementById('progressRing');
+var progressFill = document.getElementById('progressFill');
+var message = document.getElementById('message');
+var hint = document.getElementById('hint');
+
+var BLOOM_MS = 2200;
+var isHolding = false;
+var holdStart = 0;
+var progress = 0;
+var hasWilted = false;
+var animId = null;
+
+function setState(p) {
+    progress = Math.max(0, Math.min(1, p));
+    var pct = progress;
+
+    stem.style.height = (40 + pct * 160) + 'px';
+
+    var leafPct = pct > 0.25 ? (pct - 0.25) / 0.75 : 0;
+    leafL.style.opacity = leafPct;
+    leafR.style.opacity = leafPct;
+
+    var headY = -10 - pct * 5;
+    head.style.top = headY + 'px';
+
+    for (var i = 0; i < petals.length; i++) {
+        var s = pct;
+        var o = pct > 0.15 ? Math.min(1, (pct - 0.15) / 0.5) : 0;
+        var rot = i * 60;
+        petals[i].style.opacity = o;
+        petals[i].style.transform = 'rotate(' + rot + 'deg) scale(' + s + ')';
+        if (pct < 0.5) {
+            petals[i].style.filter = 'grayscale(' + ((0.5 - pct) * 0.6) + ') brightness(' + (0.85 + pct * 0.3) + ')';
+        } else {
+            petals[i].style.filter = 'none';
+        }
+    }
+
+    core.style.transform = 'scale(' + pct + ')';
+
+    var circ = 2 * Math.PI * 13.5;
+    progressFill.style.strokeDashoffset = circ * (1 - pct);
+}
+
+function tickBloom() {
+    if (!isHolding) return;
+    var elapsed = Date.now() - holdStart;
+    var p = Math.min(1, elapsed / BLOOM_MS);
+    setState(p);
+    if (p < 1) {
+        animId = requestAnimationFrame(tickBloom);
+    } else {
+        isHolding = false;
+        holdBtn.classList.remove('pressing');
+    }
+}
+
+function startHold() {
+    if (isHolding) return;
+    isHolding = true;
+    holdStart = Date.now();
+    holdBtn.classList.add('pressing');
+    progressRing.classList.add('visible');
+    hint.style.opacity = '0';
+    tickBloom();
+}
+
+function endHold() {
+    if (!isHolding) return;
+    isHolding = false;
+    holdBtn.classList.remove('pressing');
+    if (animId) cancelAnimationFrame(animId);
+
+    var wasFull = progress >= 0.95;
+
+    progressRing.classList.remove('visible');
+    setState(0);
+
+    if (wasFull) {
+        dropPetals();
+        if (!hasWilted) {
+            hasWilted = true;
+            setTimeout(function() {
+                message.classList.add('visible');
+            }, 1500);
+        }
+    }
+}
+
+function dropPetals() {
+    var stage = document.getElementById('stage');
+    var rect = stage.getBoundingClientRect();
+    for (var i = 0; i < 5; i++) {
+        var el = document.createElement('div');
+        el.className = 'falling-petal';
+        var startX = rect.left + rect.width / 2 + (Math.random() - 0.5) * 30;
+        var startY = rect.top + 60 + Math.random() * 20;
+        el.style.left = startX + 'px';
+        el.style.top = startY + 'px';
+        el.style.opacity = '0.6';
+        el.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+        document.body.appendChild(el);
+
+        var dx = (Math.random() - 0.3) * 80;
+        var dy = 150 + Math.random() * 100;
+        var rot = Math.random() * 720 - 360;
+        var t0 = performance.now();
+        var dur = 2500 + Math.random() * 1500;
+
+        (function(el, dx, dy, rot, t0, dur) {
+            function animFall(now) {
+                var t = Math.min(1, (now - t0) / dur);
+                var ease = t * t;
+                el.style.transform = 'translate(' + (dx * ease) + 'px, ' + (dy * ease) + 'px) rotate(' + (rot * ease) + 'deg)';
+                el.style.opacity = Math.max(0, 0.6 * (1 - t * 1.2));
+                if (t < 1) {
+                    requestAnimationFrame(animFall);
+                } else if (el.parentNode) {
+                    el.parentNode.removeChild(el);
+                }
+            }
+            setTimeout(function() {
+                requestAnimationFrame(animFall);
+            }, i * 300);
+        })(el, dx, dy, rot, t0, dur);
+    }
+}
+
+holdBtn.addEventListener('mousedown', function(e) { e.preventDefault(); startHold(); });
+holdBtn.addEventListener('mouseup', endHold);
+holdBtn.addEventListener('mouseleave', endHold);
+holdBtn.addEventListener('touchstart', function(e) { e.preventDefault(); startHold(); });
+holdBtn.addEventListener('touchend', function(e) { e.preventDefault(); endHold(); });
+holdBtn.addEventListener('touchcancel', endHold);
+
+setState(0);
+</script>
 </body>
 </html>
